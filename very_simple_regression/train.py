@@ -2,6 +2,9 @@ import argparse
 import os
 import torch
 from torch.utils.data import random_split, DataLoader
+import json
+from datetime import datetime
+
 
 from utils import create_noisy_sinus, plot, ROOT_DIR
 from src.datasets import SinusDataset
@@ -17,6 +20,7 @@ def read_arguments():
     parser.add_argument('-e','--epochs', help=f"Training epochs", required=False, default=300, type=int)
     parser.add_argument('-p','--plot', help=f"Plot the results after training or not", required=False, default=False, type=bool)
     parser.add_argument('-v','--verbose', help=f"Verbosity level", required=False, default=0, type=int)
+    parser.add_argument('-o','--output_dir', help=f"Output directory where training results are stored", required=False, default=None, type=str)
     args = vars(parser.parse_args())
     assert args['training'] in ['bp', 'pc']
     return args
@@ -61,11 +65,23 @@ def main():
     print(f"Best validation loss: {stats['best_val_loss']}")
     print(f"Best epoch: {stats['best_epoch']}")
 
+    # evaluate
+    out = trainer.pred(val_dataloader)
+
     # visualize predictions on validation
-    # can be disabled with arg parameter
     if args['plot']:
-        out = trainer.pred(val_dataloader)
         plot(out[0], out[1], dataset.gt)
+    # save model run
+    if args['output_dir']:
+        __log_run(path=os.path.join(ROOT_DIR, args['output_dir']), stats=stats)
+
+
+def __log_run(path, stats):
+    os.makedirs(path, exist_ok=True)
+    now = datetime.now()
+    dt_string = now.strftime("%Y%m%d%H%M%S")
+    with open(os.path.join(path, dt_string+".json"), 'w') as f:
+        json.dump(stats, f, indent=4)
 
 
 if __name__ == "__main__":
