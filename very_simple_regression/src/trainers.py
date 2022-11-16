@@ -3,8 +3,6 @@ import torch.nn as nn
 import numpy as np
 import time
 
-# TODO when PC model is implemented, understand whether we can use the same trainer 
-# for both or not; if yes, rename the trainer to Trainer(), othw. create new class
 
 class BPTrainer():
 
@@ -61,10 +59,10 @@ class BPTrainer():
         end = time.time()
 
         stats = dict()
-        stats["best_val_loss"] = min(self.val_loss)
-        stats["best_train_loss"] = min(self.train_loss)
-        stats["best_epoch"] = np.argmin(self.val_loss)
-        stats['epochs'] = epoch
+        stats["best_val_loss"] = float(min(self.val_loss))
+        stats["best_train_loss"] = float(min(self.train_loss))
+        stats["best_epoch"] = int(np.argmin(self.val_loss))+1
+        stats['epochs'] = epoch+1
         stats['time'] = end - start
         return stats
 
