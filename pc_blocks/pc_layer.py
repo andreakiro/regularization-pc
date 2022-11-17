@@ -10,13 +10,12 @@ class PCLayer(torch.nn.Module):
     size : int
            size of the input
     
-    init : str, optional (default is 'fwd')
+    init : str
            initialization technique, can be 'zeros', 'normal', 'fwd'
     """
-    def __init__(self, size: int, init: str = 'fwd') -> None:
+    def __init__(self, size: int, init: str) -> None:
 
         super().__init__()
-
         self.size = size
         self.ε = None
 
