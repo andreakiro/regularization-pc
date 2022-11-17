@@ -9,5 +9,5 @@ python train.py --training bp
 
 To plot results and show progresses during training, use
 ```python
-python train.py --training bp --verbose 1 --plot True
+python train.py --training bp --verbose 1 --plot True --output_dir outputs/
 ```

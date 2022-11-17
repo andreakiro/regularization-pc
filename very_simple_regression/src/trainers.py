@@ -62,7 +62,6 @@ class BPTrainer():
         stats["best_val_loss"] = float(min(self.val_loss))
         stats["best_train_loss"] = float(min(self.train_loss))
         stats["best_epoch"] = int(np.argmin(self.val_loss))+1
-        stats['epochs'] = epoch+1
         stats['time'] = end - start
         return stats
 
