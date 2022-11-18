@@ -31,7 +31,9 @@ def load_noisy_sinus():
 
 def plot(x, observations, ground_truth=None):
     plt.scatter(x, observations, color="r", label="noisy observation", marker='.')
-    if ground_truth: plt.plot(ground_truth[0], ground_truth[1], color="b", label="ground truth")
+    if ground_truth is not None: 
+        print("plot")
+        plt.plot(ground_truth[0], ground_truth[1], color="blue", label="ground truth")
     plt.xlabel('x')
     plt.ylabel('sin(x)')
     plt.title("A fairly messy sinus")
