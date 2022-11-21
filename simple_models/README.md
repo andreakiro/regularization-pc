@@ -22,6 +22,14 @@ Many other (optional) command-line parameters are available in the training scri
 - `--plot [True,False]`: boolean flag, activate the plotting of validation results compared to the ground truth function at the end of the training (default is False)
 - `--verbose [0,1]`: set the verbosity level of the training; if 0, no outputs will be displayed; if 1, the training loop will plot training information for each epoch (default is 0)
 - `--output_dir path`: define the relative path (with respect to the root `very_simple_regression/`) of output folder where run information are logged; if not specified, no information is logged (by default no information logged)
+- `--init`: PC initialization technique, (default is "forward"); supported values:
+    - 'zeros', hidden values initialized with 0s
+    - 'normal', hidden values initialized with a normal distribution with μ=mean and σ=std
+    - 'xavier_normal', hidden values initialize with values according to the method described in 
+      *Understanding the difficulty of training deep feedforward neural networks* - Glorot, X. & Bengio, Y. 
+      (2010), using a normal distribution. 
+    - 'forward', hidden values initialized with the forward pass value
+- `--dropout`: dropout probability, set 0 for no dropout (default is 0)
 
 For example, if you want to run the training with the default training hyper-parameters, logging the run in the `outputs/` folder, showing each training step updates, and plotting the validation result at the end of the training use
 ```python
