@@ -1,5 +1,6 @@
 import torch.nn as nn
 import torch.nn.functional as F
+import torch
 
 from ...pc_blocks.pc_layer import PCLayer
 
@@ -7,17 +8,26 @@ from ...pc_blocks.pc_layer import PCLayer
 class BPSimpleRegressor(nn.Module):
     """
     Simple ANN regressor, for backprop experiments.
+
+    Parameters
+    ----------
+    dropout : Optional[float] (default is 0)
+              dropout probability
     """
-    def __init__(self):
+    def __init__(self, dropout: float = 0.0):
         super(BPSimpleRegressor, self).__init__()
         self.linear_1 = nn.Linear(1, 1024)
         self.linear_2 = nn.Linear(1024, 1024)
         self.linear_3 = nn.Linear(1024, 1)
+        self.dropout = nn.Dropout(p=dropout)
     
-    def forward(self, input):
+
+    def forward(self, input) ->  torch.Tensor:
         out_1 = self.linear_1(input)
+        out_1 = self.dropout(out_1)
         out_1 = F.relu(out_1)
         out_2 = self.linear_2(out_1)
+        out_2 = self.dropout(out_2)
         out_2 = F.relu(out_2)
         out_3 = self.linear_3(out_2)
         return out_3
@@ -26,8 +36,23 @@ class BPSimpleRegressor(nn.Module):
 class PCSimpleRegressor(nn.Module):
     """
     Simple ANN regressor, for predictive coding experiments.
+
+    Parameters
+    ----------
+    init    : str
+              initialization technique PC hidden values; supported techniques:
+                - 'zeros', hidden values initialized with 0s
+                - 'normal', hidden values initialized with a normal distribution with μ=0 and σ=1
+                - 'fwd', hidden values initialized with the forward pass value
+          
+    dropout : Optional[float] (default is 0)
+              dropout probability
     """
-    def __init__(self, init: str = 'fwd') -> None:
+    def __init__(
+        self, 
+        init: str = 'fwd', 
+        dropout: float = 0.0
+    ):
         super(PCSimpleRegressor, self).__init__()
         self.linear_1 = nn.Linear(1, 1024)
         self.pc_1 = PCLayer(size=1024, init=init)
@@ -35,12 +60,15 @@ class PCSimpleRegressor(nn.Module):
         self.pc_2 = PCLayer(size=1024, init=init)
         self.linear_3 = nn.Linear(1024, 1)
         self.pc_3 = PCLayer(size=1, init=init)
+        self.dropout = nn.Dropout(p=dropout)
     
-    def forward(self, input):
+    def forward(self, input) -> torch.Tensor:
         out_1 = self.linear_1(input)
+        out_1 = self.dropout(out_1)
         out_1 = F.relu(out_1)
         out_1 = self.pc_1.forward(out_1)
         out_2 = self.linear_2(out_1)
+        out_2 = self.dropout(out_2)
         out_2 = F.relu(out_2)
         out_2 = self.pc_2.forward(out_2)
         out_3 = self.linear_3(out_2)
