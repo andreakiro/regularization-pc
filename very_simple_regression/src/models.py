@@ -42,15 +42,18 @@ class PCSimpleRegressor(nn.Module):
     init    : str
               initialization technique PC hidden values; supported techniques:
                 - 'zeros', hidden values initialized with 0s
-                - 'normal', hidden values initialized with a normal distribution with μ=0 and σ=1
-                - 'fwd', hidden values initialized with the forward pass value
+                - 'normal', hidden values initialized with a normal distribution with μ=mean and σ=std
+                - 'xavier_normal', hidden values initialize with values according to the method described in 
+                  *Understanding the difficulty of training deep feedforward neural networks* - Glorot, X. & Bengio, Y. 
+                  (2010), using a normal distribution. 
+                - 'forward', hidden values initialized with the forward pass value
           
     dropout : Optional[float] (default is 0)
               dropout probability
     """
     def __init__(
         self, 
-        init: str = 'fwd', 
+        init: str = 'forward', 
         dropout: float = 0.0
     ):
         super(PCSimpleRegressor, self).__init__()
