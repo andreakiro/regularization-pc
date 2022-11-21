@@ -35,6 +35,9 @@ def main():
     lr = args['lr']
     epochs = args['epochs']
     verbose = args['verbose']
+    train = args['training']
+    arg_plot = args['plot']
+    out_dir = args['output_dir']
 
     data_path = os.path.join(ROOT_DIR, "data/noisy_sinus.npy")
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
@@ -47,19 +50,19 @@ def main():
     train_dataloader = DataLoader(training_data, batch_size=32)
     val_dataloader = DataLoader(val_data, batch_size=32)
 
-    model = BPSimpleRegressor().to(device) if args['training'] == "bp" else PCSimpleRegressor().to(device)
+    model = BPSimpleRegressor().to(device) if train == "bp" else PCSimpleRegressor().to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr) # TODO Luca mentioned adam is not suitable for PC, we might have to change this to SGD if it performs bad on PC
     loss = torch.nn.MSELoss()
 
     print(f"[Training started]")
-    if args['training'] == "bp":
+    if train == "bp":
         trainer = BPTrainer(optimizer=optimizer, loss=loss, epochs=epochs, verbose=verbose)
     else:
         pass
 
     stats = trainer.fit(model, train_dataloader, val_dataloader)
     print(f"\n[Training completed]")
-    print(f"Number of epochs: {stats['epochs']}")
+    print(f"Number of epochs: {epochs}")
     print(f"Elapsed time: {stats['time']} s")
     print(f"Best train loss: {stats['best_val_loss']}")
     print(f"Best validation loss: {stats['best_val_loss']}")
@@ -69,19 +72,23 @@ def main():
     out = trainer.pred(val_dataloader)
 
     # visualize predictions on validation
-    if args['plot']:
+    if arg_plot:
         plot(out[0], out[1], dataset.gt)
     # save model run
-    if args['output_dir']:
-        __log_run(path=os.path.join(ROOT_DIR, args['output_dir']), stats=stats)
-
-
-def __log_run(path, stats):
-    os.makedirs(path, exist_ok=True)
-    now = datetime.now()
-    dt_string = now.strftime("%Y%m%d%H%M%S")
-    with open(os.path.join(path, dt_string+".json"), 'w') as f:
-        json.dump(stats, f, indent=4)
+    if out_dir:
+        os.makedirs(os.path.join(ROOT_DIR, out_dir), exist_ok=True)
+        now = datetime.now()
+        dt_string = now.strftime("%Y%m%d%H%M%S")
+        log = {
+            "framework" : train,
+            "epochs" : epochs,
+            "optimizer" : type (optimizer).__name__,
+            "loss" : loss._get_name(),
+            "lr" : lr,
+            "results" : stats
+        }
+        with open(os.path.join(os.path.join(ROOT_DIR, out_dir), dt_string+".json"), 'w') as f:
+            json.dump(log, f, indent=2)
 
 
 if __name__ == "__main__":
