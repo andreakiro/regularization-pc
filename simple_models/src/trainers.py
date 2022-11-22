@@ -3,15 +3,15 @@ import torch.nn as nn
 import numpy as np
 import time
 
-
 class BPTrainer():
 
-    def __init__(self,
-                optimizer: torch.optim,
-                loss: torch.nn.modules.loss,
-                epochs: int = 50,
-                verbose: int = 0
-                ) -> None:
+    def __init__(
+        self,
+        optimizer: torch.optim,
+        loss: torch.nn.modules.loss,
+        epochs: int = 50,
+        verbose: int = 0
+    ) -> None:
 
         self.optimizer = optimizer
         self.loss = loss
@@ -21,12 +21,12 @@ class BPTrainer():
         self.train_loss = []
         self.val_loss = []
 
-
-    def fit(self,
-            model: nn.Module,
-            train_dataloader: torch.utils.data.DataLoader,
-            val_dataloader: torch.utils.data.DataLoader
-            ) -> dict:
+    def fit(
+        self,
+        model: nn.Module,
+        train_dataloader: torch.utils.data.DataLoader,
+        val_dataloader: torch.utils.data.DataLoader
+    ) -> dict:
 
         self.model = model
         start = time.time()
@@ -63,9 +63,9 @@ class BPTrainer():
         stats["best_train_loss"] = float(min(self.train_loss))
         stats["best_epoch"] = int(np.argmin(self.val_loss))+1
         stats['time'] = end - start
+
         return stats
 
-       
     def pred(self, pred_dataloader):
         X, pred = [], []
         for batch, _ in pred_dataloader:
@@ -73,3 +73,15 @@ class BPTrainer():
                 X.append(x.detach().cpu().numpy())
                 pred.append(self.model(x).detach().cpu().numpy())
         return X, pred
+
+class PCTrainer(nn.Module):
+
+    def __init__(self):
+        raise NotImplementedError()
+    
+    def fit(self, **kwargs):
+        raise NotImplementedError()
+
+    def pred(self, **kwargs):
+        raise NotImplementedError()
+        

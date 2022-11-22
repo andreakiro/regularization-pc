@@ -1,10 +1,9 @@
-import argparse
-import os
-import torch
 from torch.utils.data import random_split, DataLoader
-import json
 from datetime import datetime
-
+import argparse
+import torch
+import json
+import os
 
 from utils import create_noisy_sinus, plot, ROOT_DIR
 from src.datasets import SinusDataset
@@ -14,7 +13,7 @@ from src.models import BPSimpleRegressor, PCSimpleRegressor
 
 def read_arguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-t','--training', help=f"Training framework, either 'bp' (backprop) or 'pc' (predictive coding)", required=True, type=str)
+    parser.add_argument('-t','--training', help=f"Training framework, either 'bp' (backprop) or 'pc' (predictive coding)", choices={'bp', 'pc'}, required=True, type=str)
     parser.add_argument('-n','--num', help=f"Number of generared samples", required=False, default=1000, type=int)
     parser.add_argument('-l','--lr', help=f"Learning rate", required=False, default=0.001, type=float)
     parser.add_argument('-e','--epochs', help=f"Training epochs", required=False, default=300, type=int)
@@ -24,7 +23,6 @@ def read_arguments():
     parser.add_argument('-dp','--dropout', help=f"Dropout level", required=False, default=0, type=float)
     parser.add_argument('-o','--output_dir', help=f"Output directory where training results are stored", required=False, default=None, type=str)
     args = vars(parser.parse_args())
-    assert args['training'] in ['bp', 'pc']
     return args
 
 
@@ -72,7 +70,7 @@ def main():
     if train == "bp":
         trainer = BPTrainer(optimizer=optimizer, loss=loss, epochs=epochs, verbose=verbose)
     else:
-        pass
+        return
 
     stats = trainer.fit(model, train_dataloader, val_dataloader)
     print(f"\n[Training completed]")
@@ -88,6 +86,7 @@ def main():
     # visualize predictions on validation
     if arg_plot:
         plot(out[0], out[1], dataset.gt)
+    
     # save model run
     if out_dir:
         os.makedirs(os.path.join(ROOT_DIR, out_dir), exist_ok=True)
