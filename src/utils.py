@@ -25,7 +25,7 @@ def load_noisy_sinus():
     data = np.load(os.path.join(os.path.join(ROOT_DIR, "data"), "noisy_sinus.npy"))
     return data
 
-def plot(x, observations, ground_truth=None):
+def plot(x, observations, ground_truth=None, outfile=None):
     plt.scatter(x, observations, color="r", label="noisy observation", marker='.')
     if ground_truth is not None: 
         plt.plot(ground_truth[0], ground_truth[1], color="blue", label="ground truth")
@@ -33,4 +33,5 @@ def plot(x, observations, ground_truth=None):
     plt.ylabel('sin(x)')
     plt.title("A fairly messy sinus")
     plt.legend(loc="best")
+    if outfile is not None: plt.savefig(outfile)
     plt.show()

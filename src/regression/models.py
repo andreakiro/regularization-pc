@@ -4,7 +4,7 @@ import torch
 import sys
 sys.path.append("..")
 
-from pc_blocks.pc_layer import PCLayer
+from src.pc_blocks.pc_layer import PCLayer
 
 
 class BPSimpleRegressor(nn.Module):

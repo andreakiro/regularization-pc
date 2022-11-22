@@ -1,6 +1,5 @@
 import torch
 
-
 class PCLayer(torch.nn.Module):
     """
     Custom Predictive Coding Layer
