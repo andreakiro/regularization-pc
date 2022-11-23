@@ -74,7 +74,7 @@ def main():
     print(f"[Training started]")
 
     if train == "bp":
-        trainer = BPTrainer(optimizer=optimizer, loss=loss, epochs=epochs, verbose=verbose)
+        trainer = BPTrainer(optimizer=optimizer, loss=loss, device=device, epochs=epochs, verbose=verbose)
     else:
         return
 
