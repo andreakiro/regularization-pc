@@ -6,9 +6,9 @@ import json
 import os
 
 from src.utils import create_noisy_sinus, plot
-from src.regression.datasets import SinusDataset
-from src.regression.trainers import BPTrainer
-from src.regression.models import BPSimpleRegressor, PCSimpleRegressor
+from src.mlp.datasets import SinusDataset
+from src.mlp.trainers import BPTrainer
+from src.mlp.models.regression import BPSimpleRegressor, PCSimpleRegressor
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 OUT_DIR = os.path.join(ROOT_DIR, 'out')
