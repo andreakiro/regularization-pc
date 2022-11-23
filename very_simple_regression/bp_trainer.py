@@ -19,9 +19,10 @@ class bp_trainer:
         testing_data_mask = np.logical_not(training_data_mask)
         self.train_x = x[training_data_mask]
         self.test_x = x[testing_data_mask]
+        self.train_y = y[training_data_mask]
+        self.test_y = y[testing_data_mask]
         self.train_gt = gt[training_data_mask]
         self.test_gt = gt[testing_data_mask]
         
-    
     def train():
         ...
