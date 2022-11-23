@@ -1,11 +1,9 @@
 # Regression model
 - Toy model and dataset to test regularization techniques for PC
 - The dataset are points sampled from a generated noisy sine wave [0,4]
+- Sampled data and the ground truth function looks [like this](https://github.com/andreakiro/bio-transformers/blob/11-refactor-repo-structure/out/images/reg/20221117111430.png)
 
 ![equation](https://latex.codecogs.com/svg.image?%5Cinline%20%5Csmall%20g(x)%20=%20f(x)%20&plus;%20%5Cepsilon%20=%20%5Csin(1&plus;x%5E2)%20&plus;%20%5Cmathcal%7BN%7D%20(0,%201)) 
-
-- Sampled data and the ground truth function look like this:
-![alt text](https://github.com/andreakiro/bio-transformers/blob/bp_simple_regressor/very_simple_regression/images/data.png)
 
 ## How to run the model
 
