@@ -1,0 +1,13 @@
+{
+  "framework": "bp",
+  "epochs": 10,
+  "optimizer": "Adam",
+  "loss": "MSELoss",
+  "lr": 0.001,
+  "results": {
+    "best_val_loss": 0.27470681071281433,
+    "best_train_loss": 0.2651866674423218,
+    "best_epoch": 10,
+    "time": 2.840258836746216
+  }
+}

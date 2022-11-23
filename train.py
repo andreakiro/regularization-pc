@@ -88,18 +88,18 @@ def main():
 
     # evaluate
     out = trainer.pred(val_dataloader)
-    dt_string = args['model'] + '-' + datetime.now().strftime("%Y%m%d%H%M%S")
+    dt_string = datetime.now().strftime("%Y%m%d%H%M%S")
 
     # visualize predictions on validation
     if arg_plot:
-        outdir = os.path.join(OUT_DIR, 'images')
+        outdir = os.path.join(OUT_DIR, 'images', args['model'])
         outfile = os.path.join(outdir, dt_string+'.png')
         os.makedirs(outdir, exist_ok=True)
         plot(out[0], out[1], dataset.gt, outfile=outfile)
     
     # save model run
     if out_dir:
-        outdir = os.path.join(OUT_DIR, 'logs')
+        outdir = os.path.join(OUT_DIR, 'logs', args['model'])
         outfile = os.path.join(outdir, dt_string+'.json')
         os.makedirs(outdir, exist_ok=True)
 
