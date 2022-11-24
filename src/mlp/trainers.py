@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 import time
+import os
 
 class BPTrainer():
 
@@ -9,31 +10,37 @@ class BPTrainer():
         self,
         optimizer: torch.optim,
         loss: torch.nn.modules.loss,
+        model_save_folder: str,
+        checkpoint_frequency: int = 1,
         device: torch.device = torch.device('cpu', 0),
         epochs: int = 50,
-        verbose: int = 0
-    ) -> None:
+        verbose: int = 0,
+        val_loss = [],
+        train_loss = []
+    ):
 
         self.optimizer = optimizer
         self.loss = loss
         self.verbose = verbose
         self.epochs = epochs
         self.device = device
+        self.model_save_folder = model_save_folder
+        self.checkpoint_frequency = checkpoint_frequency
 
-        self.train_loss = []
-        self.val_loss = []
+        self.train_loss = train_loss
+        self.val_loss = val_loss
 
     def fit(
         self,
         model: nn.Module,
         train_dataloader: torch.utils.data.DataLoader,
-        val_dataloader: torch.utils.data.DataLoader
-    ) -> dict:
-
+        val_dataloader: torch.utils.data.DataLoader,
+        start_epoch: int = 0
+    ):
         self.model = model.to(self.device)
         start = time.time()
 
-        for epoch in range(self.epochs):
+        for epoch in range(self.epochs)[start_epoch:]:
 
             model.train()
             tmp_loss = []
@@ -58,7 +65,19 @@ class BPTrainer():
                         
             if self.verbose:
                 print("[Epoch %d/%d] train loss: %.5f, test loss: %.5f" % (epoch+1, self.epochs, self.train_loss[-1], self.val_loss[-1]))
-
+            
+            # checkpoint model every 30 epochs
+            if (epoch % self.checkpoint_frequency == 0) or (epoch == self.epochs-1):
+                torch.save({
+                    'model_state_dict': model.state_dict(),
+                    'optimizer_state_dict': self.optimizer.state_dict()
+                    }, os.path.join(self.model_save_folder, f"checkpoint_{epoch}.pt"))
+                # torch.save(obj=model, file=os.path.join(self.model_save_folder, f"model_ep{epoch}"))
+                # torch.save(obj=self.optimizer, file=os.path.join(self.model_save_folder, f"optimizer_ep{epoch}"))
+            
+            # save validation losses every epoch
+            np.save(file = os.path.join(self.model_save_folder, "validation_losses.npy"), arr = np.array(self.val_loss))
+            np.save(file = os.path.join(self.model_save_folder, "train_losses.npy"), arr = np.array(self.train_loss))
         end = time.time()
 
         stats = dict()
