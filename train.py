@@ -28,6 +28,7 @@ def read_arguments():
     parser.add_argument('-i','--init', help=f"PC initialization technique", required=False, default="forward", type=str)
     parser.add_argument('-dp','--dropout', help=f"Dropout level", required=False, default=0, type=float)
     parser.add_argument('-cf','--checkpoint_frequency', help=f"checkpoint frequency in epochs", required=False, default=1, type=int)
+    parser.add_argument('-es','--early_stopping', help=f"the number of past epochs taken into account for early_stopping", required=False, default=300, type=int)
     
     args = vars(parser.parse_args())
     return args
@@ -44,13 +45,16 @@ def main():
     dropout = args['dropout']
     init = args['init']
     run_name = args['run']
+    early_stopping = args["early_stopping"]
     checkpoint_frequency = args['checkpoint_frequency']
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     
     # saving paths
     model_save_dir = create_model_save_folder(args["model"], run_name)
     log_dir = os.path.join(OUT_DIR, 'logs', args['model'], run_name)
+    os.makedirs(log_dir, exist_ok=True)
     image_dir = os.path.join(OUT_DIR, 'images', args['model'], run_name)
+    os.makedirs(image_dir, exist_ok=True)
     data_path = os.path.join(ROOT_DIR, "src/data/noisy_sinus.npy")
     
     # prepare data and dataloaders
@@ -102,6 +106,7 @@ def main():
             checkpoint_frequency=checkpoint_frequency, 
             device=device, 
             epochs=epochs, 
+            early_stopping=early_stopping,
             val_loss=validation_losses,
             train_loss=train_losses,
             model_save_folder=model_save_dir,
@@ -130,12 +135,10 @@ def main():
     # visualize predictions on validation
     if arg_plot:
         outfile = os.path.join(image_dir, dt_string+'.png')
-        os.makedirs(image_dir, exist_ok=True)
         plot(X, y, dataset.gt, outfile=outfile)
     
     # save model run parameters
     outfile = os.path.join(log_dir, dt_string+'.json')
-    os.makedirs(log_dir, exist_ok=True)
 
     log = {
         "framework" : train,

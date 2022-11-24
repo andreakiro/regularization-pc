@@ -13,8 +13,9 @@ class BPTrainer():
         model_save_folder: str,
         log_save_folder: str,
         checkpoint_frequency: int = 1,
-        device: torch.device = torch.device('cpu', 0),
         epochs: int = 50,
+        early_stopping: int = 50,
+        device: torch.device = torch.device('cpu', 0),
         verbose: int = 0,
         val_loss = [],
         train_loss = []
@@ -28,7 +29,7 @@ class BPTrainer():
         self.model_save_folder = model_save_folder
         self.log_save_folder = log_save_folder
         self.checkpoint_frequency = checkpoint_frequency
-
+        self.early_stopping = early_stopping
         self.train_loss = train_loss
         self.val_loss = val_loss
 
@@ -78,6 +79,11 @@ class BPTrainer():
             # save validation losses every epoch
             np.save(file = os.path.join(self.log_save_folder, "validation_losses.npy"), arr = np.array(self.val_loss))
             np.save(file = os.path.join(self.log_save_folder, "train_losses.npy"), arr = np.array(self.train_loss))
+            
+            # check for early stopping
+            if self.check_early_stopping():
+                print(f"Early stopping induced, evaluation loss has not improved for the last {self.early_stopping} epochs.")
+                break
         end = time.time()
 
         stats = dict()
@@ -87,6 +93,12 @@ class BPTrainer():
         stats['time'] = end - start
 
         return stats
+    
+    def check_early_stopping(self):
+        if len(self.val_loss) <= self.early_stopping:
+            return False
+        else:
+            return max(self.val_loss[-self.early_stopping-1:-2]) <= self.val_loss[-1]
 
 
 class PCTrainer(nn.Module):
