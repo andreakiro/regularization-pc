@@ -7,7 +7,7 @@
 
 ## How to run the model
 
-- To run the model, simply use following command at root:
+- To train the model, simply use following command at root:
 
 ```python
 python train.py --model reg --training [bp,pc]
