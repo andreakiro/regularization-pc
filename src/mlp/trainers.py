@@ -11,6 +11,7 @@ class BPTrainer():
         optimizer: torch.optim,
         loss: torch.nn.modules.loss,
         model_save_folder: str,
+        log_save_folder: str,
         checkpoint_frequency: int = 1,
         device: torch.device = torch.device('cpu', 0),
         epochs: int = 50,
@@ -25,6 +26,7 @@ class BPTrainer():
         self.epochs = epochs
         self.device = device
         self.model_save_folder = model_save_folder
+        self.log_save_folder = log_save_folder
         self.checkpoint_frequency = checkpoint_frequency
 
         self.train_loss = train_loss
@@ -74,8 +76,8 @@ class BPTrainer():
                     }, os.path.join(self.model_save_folder, f"checkpoint_{epoch}.pt"))
             
             # save validation losses every epoch
-            np.save(file = os.path.join(self.model_save_folder, "validation_losses.npy"), arr = np.array(self.val_loss))
-            np.save(file = os.path.join(self.model_save_folder, "train_losses.npy"), arr = np.array(self.train_loss))
+            np.save(file = os.path.join(self.log_save_folder, "validation_losses.npy"), arr = np.array(self.val_loss))
+            np.save(file = os.path.join(self.log_save_folder, "train_losses.npy"), arr = np.array(self.train_loss))
         end = time.time()
 
         stats = dict()

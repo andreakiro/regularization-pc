@@ -41,14 +41,16 @@ def main():
     verbose = args['verbose']
     train = args['training']
     arg_plot = args['plot']
-    out_dir = args['output_dir']
     dropout = args['dropout']
     init = args['init']
     run_name = args['run']
     checkpoint_frequency = args['checkpoint_frequency']
-    
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-    model_save_folder = create_model_save_folder(args["model"], run_name)
+    
+    # saving paths
+    model_save_dir = create_model_save_folder(args["model"], run_name)
+    log_dir = os.path.join(OUT_DIR, 'logs', args['model'], run_name)
+    image_dir = os.path.join(OUT_DIR, 'images', args['model'], run_name)
     data_path = os.path.join(ROOT_DIR, "src/data/noisy_sinus.npy")
     
     # prepare data and dataloaders
@@ -79,17 +81,17 @@ def main():
         
     # load last model checkpoint, optimizer checkpoint and past validation losses if existent
     start_epoch = 0
-    checkpoints = [checkpoint for checkpoint in os.listdir(model_save_folder) if checkpoint.startswith("checkpoint_")]
+    checkpoints = [checkpoint for checkpoint in os.listdir(model_save_dir) if checkpoint.startswith("checkpoint_")]
     validation_losses = []
     train_losses = []
     if len(checkpoints) != 0:
         last_epoch = max([int(re.search(r'\d+', file).group()) for file in checkpoints])
         start_epoch = last_epoch + 1
-        last_checkpoint = torch.load(f = os.path.join(model_save_folder, f"checkpoint_{last_epoch}.pt"))
+        last_checkpoint = torch.load(f = os.path.join(model_save_dir, f"checkpoint_{last_epoch}.pt"))
         model.load_state_dict(last_checkpoint['model_state_dict'])
         optimizer.load_state_dict(last_checkpoint['optimizer_state_dict'])
-        validation_losses = np.load(os.path.join(model_save_folder, f"validation_losses.npy")).tolist()
-        train_losses = np.load(os.path.join(model_save_folder, f"train_losses.npy")).tolist()
+        validation_losses = np.load(os.path.join(log_dir, f"validation_losses.npy")).tolist()
+        train_losses = np.load(os.path.join(log_dir, f"train_losses.npy")).tolist()
     model.to(device)
     
     # init Trainers
@@ -102,7 +104,8 @@ def main():
             epochs=epochs, 
             val_loss=validation_losses,
             train_loss=train_losses,
-            model_save_folder=model_save_folder, 
+            model_save_folder=model_save_dir,
+            log_save_folder=log_dir, 
             verbose=verbose)
     else:
         return
@@ -126,15 +129,13 @@ def main():
 
     # visualize predictions on validation
     if arg_plot:
-        outdir = os.path.join(OUT_DIR, 'images', args['model'], run_name)
-        outfile = os.path.join(outdir, dt_string+'.png')
-        os.makedirs(outdir, exist_ok=True)
+        outfile = os.path.join(image_dir, dt_string+'.png')
+        os.makedirs(image_dir, exist_ok=True)
         plot(X, y, dataset.gt, outfile=outfile)
     
     # save model run parameters
-    outdir = os.path.join(OUT_DIR, 'logs', args['model'], run_name)
-    outfile = os.path.join(outdir, dt_string+'.json')
-    os.makedirs(outdir, exist_ok=True)
+    outfile = os.path.join(log_dir, dt_string+'.json')
+    os.makedirs(log_dir, exist_ok=True)
 
     log = {
         "framework" : train,
