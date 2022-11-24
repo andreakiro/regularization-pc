@@ -49,7 +49,9 @@ class PCLayer(torch.nn.Module):
         elif init == 'xavier_normal':
             torch.nn.init.xavier_normal_(x, gain=1.),
 
-        elif init != 'forward':
+        elif init == 'forward':
+            pass # forward initialisation happens in the forward method
+        else:
             raise ValueError(f"{init} is not a valid initialization technique!")
 
         self.x = torch.nn.Parameter(x)
