@@ -3,7 +3,7 @@ import torch.nn as nn
 import numpy as np
 import time
 
-class BPTrainer():
+class BPRegressionTrainer():
 
     def __init__(
         self,
@@ -77,7 +77,7 @@ class BPTrainer():
                 pred.append(self.model(x).detach().cpu().numpy())
         return X, pred
 
-class PCTrainer(nn.Module):
+class PCRegressionTrainer(nn.Module):
 
     def __init__(self):
         raise NotImplementedError()
