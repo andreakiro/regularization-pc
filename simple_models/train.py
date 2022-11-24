@@ -19,6 +19,8 @@ def read_arguments():
     parser.add_argument('-e','--epochs', help=f"Training epochs", required=False, default=300, type=int)
     parser.add_argument('-p','--plot', help=f"Plot the results after training or not", required=False, default=False, type=bool)
     parser.add_argument('-v','--verbose', help=f"Verbosity level", required=False, default=0, type=int)
+    parser.add_argument('-i','--init', help=f"PC initialization technique", required=False, default="forward", type=str)
+    parser.add_argument('-dp','--dropout', help=f"Dropout level", required=False, default=0, type=float)
     parser.add_argument('-o','--output_dir', help=f"Output directory where training results are stored", required=False, default=None, type=str)
     args = vars(parser.parse_args())
     return args
@@ -36,6 +38,8 @@ def main():
     train = args['training']
     arg_plot = args['plot']
     out_dir = args['output_dir']
+    dropout = args['dropout']
+    init = args['init']
 
     data_path = os.path.join(ROOT_DIR, "data/noisy_sinus.npy")
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
@@ -48,7 +52,17 @@ def main():
     train_dataloader = DataLoader(training_data, batch_size=32)
     val_dataloader = DataLoader(val_data, batch_size=32)
 
-    model = BPSimpleRegressor().to(device) if train == "bp" else PCSimpleRegressor().to(device)
+    if train == "bp":
+        model = BPSimpleRegressor(
+            dropout=dropout
+        ).to(device) 
+
+    else:
+        model = PCSimpleRegressor(
+            init=init,
+            dropout=dropout
+        ).to(device)
+
     optimizer = torch.optim.Adam(model.parameters(), lr=lr) # TODO Luca mentioned adam is not suitable for PC, we might have to change this to SGD if it performs bad on PC
     loss = torch.nn.MSELoss()
 
