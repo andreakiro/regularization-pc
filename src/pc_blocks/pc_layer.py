@@ -35,7 +35,7 @@ class PCLayer(torch.nn.Module):
         super().__init__()
         self.size = size
         self.ε = None
-self.init = init
+        self.init = init
         x = torch.empty((1, self.size))
 
         if init == 'zeros':
