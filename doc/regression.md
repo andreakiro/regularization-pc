@@ -5,7 +5,7 @@
 
 ![equation](https://latex.codecogs.com/svg.image?%5Cinline%20%5Csmall%20g(x)%20=%20f(x)%20&plus;%20%5Cepsilon%20=%20%5Csin(1&plus;x%5E2)%20&plus;%20%5Cmathcal%7BN%7D%20(0,%201)) 
 
-## How to run the model
+## How to train the model
 
 - To train the model, simply use following command at root:
 
