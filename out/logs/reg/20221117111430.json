@@ -1,13 +1,3 @@
-{
-  "framework": "bp",
-  "epochs": 300,
-  "optimizer": "Adam",
-  "loss": "MSELoss",
-  "lr": 0.001,
-  "results": {
-    "best_val_loss": 0.018592488020658493,
-    "best_train_loss": 0.01500045508146286,
-    "best_epoch": 286,
-    "time": 55.93741011619568
-  }
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:130cb6bcb1d840365edd88089f15a8d0bbbe571fc3eac30bacea191fb5fe7636
+size 259
