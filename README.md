@@ -6,7 +6,7 @@
 
 ## Get started with our code
 
-We implement three models on the BP and PC paradigms (click for details)
+We implement three models once with BP and once with PC (click for details)
 - Basic [regression model](doc/regression.md) to be trained on a noisy sinus time series
 - Basic classification model to be trained on the classic MNIST dataset
 - Simple Transformer architecture to be trained on a small language dataset
