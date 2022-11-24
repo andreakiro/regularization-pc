@@ -4,6 +4,7 @@ import argparse
 import torch
 import json
 import os
+import numpy as np
 
 from src.utils import create_noisy_sinus, plot
 from src.mlp.datasets import SinusDataset
@@ -87,7 +88,11 @@ def main():
     print(f'{"Best epoch": <21}: {stats["best_epoch"]}')
 
     # evaluate
-    out = trainer.pred(val_dataloader)
+    X, y = [], []
+    for batch, _ in val_dataloader:
+        X.append(batch.detach().numpy())
+        y.append(model(batch).detach().numpy())
+    X, y = np.concatenate(X).ravel(), np.concatenate(y).ravel()
     dt_string = datetime.now().strftime("%Y%m%d%H%M%S")
 
     # visualize predictions on validation
@@ -95,7 +100,7 @@ def main():
         outdir = os.path.join(OUT_DIR, 'images', args['model'])
         outfile = os.path.join(outdir, dt_string+'.png')
         os.makedirs(outdir, exist_ok=True)
-        plot(out[0], out[1], dataset.gt, outfile=outfile)
+        plot(X, y, dataset.gt, outfile=outfile)
     
     # save model run
     if out_dir:
