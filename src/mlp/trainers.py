@@ -86,13 +86,6 @@ class BPTrainer():
 
         return stats
 
-    def pred(self, pred_dataloader):
-        X, pred = [], []
-        for batch, _ in pred_dataloader:
-            for x in batch:
-                X.append(x.detach().cpu().numpy())
-                pred.append(self.model(x).detach().cpu().numpy())
-        return X, pred
 
 class PCTrainer(nn.Module):
 
