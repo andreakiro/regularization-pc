@@ -5,14 +5,17 @@ import torch
 import json
 import os
 
-from utils import create_noisy_sinus, plot, ROOT_DIR
-from src.datasets import SinusDataset
-from src.trainers import BPTrainer
-from src.models import BPSimpleRegressor, PCSimpleRegressor
+from src.utils import create_noisy_sinus, plot
+from src.mlp.datasets import SinusDataset
+from src.mlp.trainers import BPTrainer
+from src.mlp.models.regression import BPSimpleRegressor, PCSimpleRegressor
 
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+OUT_DIR = os.path.join(ROOT_DIR, 'out')
 
 def read_arguments():
     parser = argparse.ArgumentParser()
+    parser.add_argument('-m', '--model', help=f"Model selection for experiments", choices={'reg', 'clf', 'trf'}, required=True, type=str)
     parser.add_argument('-t','--training', help=f"Training framework, either 'bp' (backprop) or 'pc' (predictive coding)", choices={'bp', 'pc'}, required=True, type=str)
     parser.add_argument('-n','--num', help=f"Number of generared samples", required=False, default=1000, type=int)
     parser.add_argument('-l','--lr', help=f"Learning rate", required=False, default=0.001, type=float)
@@ -41,7 +44,7 @@ def main():
     dropout = args['dropout']
     init = args['init']
 
-    data_path = os.path.join(ROOT_DIR, "data/noisy_sinus.npy")
+    data_path = os.path.join(ROOT_DIR, "src/data/noisy_sinus.npy")
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
     dataset = SinusDataset(data_path=data_path, device=device)
@@ -63,35 +66,43 @@ def main():
             dropout=dropout
         ).to(device)
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr) # TODO Luca mentioned adam is not suitable for PC, we might have to change this to SGD if it performs bad on PC
+    # TODO Luca mentioned adam is not suitable for PC
+    # we might have to change this to SGD if it performs bad on PC
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr) 
     loss = torch.nn.MSELoss()
 
     print(f"[Training started]")
+
     if train == "bp":
-        trainer = BPTrainer(optimizer=optimizer, loss=loss, epochs=epochs, verbose=verbose)
+        trainer = BPTrainer(optimizer=optimizer, loss=loss, device=device, epochs=epochs, verbose=verbose)
     else:
         return
 
     stats = trainer.fit(model, train_dataloader, val_dataloader)
     print(f"\n[Training completed]")
-    print(f"Number of epochs: {epochs}")
-    print(f"Elapsed time: {stats['time']} s")
-    print(f"Best train loss: {stats['best_val_loss']}")
-    print(f"Best validation loss: {stats['best_val_loss']}")
-    print(f"Best epoch: {stats['best_epoch']}")
+    print(f'{"Number of epochs": <21}: {epochs}')
+    print(f'{"Elapsed time": <21}: {round(stats["time"], 2)}s')
+    print(f'{"Best train loss": <21}: {round(stats["best_train_loss"], 5)}')
+    print(f'{"Best validation loss": <21}: {round(stats["best_val_loss"], 5)}')
+    print(f'{"Best epoch": <21}: {stats["best_epoch"]}')
 
     # evaluate
     out = trainer.pred(val_dataloader)
+    dt_string = datetime.now().strftime("%Y%m%d%H%M%S")
 
     # visualize predictions on validation
     if arg_plot:
-        plot(out[0], out[1], dataset.gt)
+        outdir = os.path.join(OUT_DIR, 'images', args['model'])
+        outfile = os.path.join(outdir, dt_string+'.png')
+        os.makedirs(outdir, exist_ok=True)
+        plot(out[0], out[1], dataset.gt, outfile=outfile)
     
     # save model run
     if out_dir:
-        os.makedirs(os.path.join(ROOT_DIR, out_dir), exist_ok=True)
-        now = datetime.now()
-        dt_string = now.strftime("%Y%m%d%H%M%S")
+        outdir = os.path.join(OUT_DIR, 'logs', args['model'])
+        outfile = os.path.join(outdir, dt_string+'.json')
+        os.makedirs(outdir, exist_ok=True)
+
         log = {
             "framework" : train,
             "epochs" : epochs,
@@ -100,9 +111,9 @@ def main():
             "lr" : lr,
             "results" : stats
         }
-        with open(os.path.join(os.path.join(ROOT_DIR, out_dir), dt_string+".json"), 'w') as f:
-            json.dump(log, f, indent=2)
 
+        with open(outfile, 'w') as f:
+            json.dump(log, f, indent=2)
 
 if __name__ == "__main__":
     main()

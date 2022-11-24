@@ -9,6 +9,7 @@ class BPTrainer():
         self,
         optimizer: torch.optim,
         loss: torch.nn.modules.loss,
+        device: torch.device = torch.device('cpu', 0),
         epochs: int = 50,
         verbose: int = 0
     ) -> None:
@@ -17,6 +18,7 @@ class BPTrainer():
         self.loss = loss
         self.verbose = verbose
         self.epochs = epochs
+        self.device = device
 
         self.train_loss = []
         self.val_loss = []
@@ -28,7 +30,7 @@ class BPTrainer():
         val_dataloader: torch.utils.data.DataLoader
     ) -> dict:
 
-        self.model = model
+        self.model = model.to(self.device)
         start = time.time()
 
         for epoch in range(self.epochs):
@@ -36,6 +38,7 @@ class BPTrainer():
             model.train()
             tmp_loss = []
             for X_train, y_train in train_dataloader:
+                X_train, y_train = X_train.to(self.device), y_train.to(self.device)
                 self.optimizer.zero_grad()
                 score = model(X_train)
                 loss = self.loss(input=score, target=y_train)

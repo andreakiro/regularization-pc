@@ -1,6 +1,5 @@
 import torch
 
-
 class PCLayer(torch.nn.Module):
     """
     Custom Predictive Coding Layer
@@ -36,7 +35,7 @@ class PCLayer(torch.nn.Module):
         super().__init__()
         self.size = size
         self.ε = None
-
+        self.init = init
         x = torch.empty((1, self.size))
 
         if init == 'zeros':
@@ -50,7 +49,9 @@ class PCLayer(torch.nn.Module):
         elif init == 'xavier_normal':
             torch.nn.init.xavier_normal_(x, gain=1.),
 
-        elif init != 'forward':
+        elif init == 'forward':
+            pass # forward initialisation happens in the forward method
+        else:
             raise ValueError(f"{init} is not a valid initialization technique!")
 
         self.x = torch.nn.Parameter(x)
@@ -77,7 +78,8 @@ class PCLayer(torch.nn.Module):
         Returns the current layer guess value.
 
         """
-        if len(self.x.size()) == 0: 
+        if self.init == 'forward':
+            assert len(self.x.size()) == 0
             self.x = torch.mean(μ, dim=0, keepdim=True)  # forward pass initialization
         self.ε = (self.x - μ)**2
         return self.x
