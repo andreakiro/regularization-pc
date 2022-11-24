@@ -72,8 +72,6 @@ class BPTrainer():
                     'model_state_dict': model.state_dict(),
                     'optimizer_state_dict': self.optimizer.state_dict()
                     }, os.path.join(self.model_save_folder, f"checkpoint_{epoch}.pt"))
-                # torch.save(obj=model, file=os.path.join(self.model_save_folder, f"model_ep{epoch}"))
-                # torch.save(obj=self.optimizer, file=os.path.join(self.model_save_folder, f"optimizer_ep{epoch}"))
             
             # save validation losses every epoch
             np.save(file = os.path.join(self.model_save_folder, "validation_losses.npy"), arr = np.array(self.val_loss))
