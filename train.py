@@ -7,7 +7,7 @@ import os
 
 from src.utils import create_noisy_sinus, plot
 from src.mlp.datasets import SinusDataset
-from src.mlp.trainers import BPTrainer
+from src.mlp.trainers import BPTrainer, PCTrainer
 from src.mlp.models.regression import BPSimpleRegressor, PCSimpleRegressor
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -22,7 +22,7 @@ def read_arguments():
     parser.add_argument('-e','--epochs', help=f"Training epochs", required=False, default=300, type=int)
     parser.add_argument('-p','--plot', help=f"Plot the results after training or not", required=False, default=False, type=bool)
     parser.add_argument('-v','--verbose', help=f"Verbosity level", required=False, default=0, type=int)
-    parser.add_argument('-i','--init', help=f"PC initialization technique", required=False, default="forward", type=str)
+    parser.add_argument('-i','--init', help=f"PC initialization technique", choices={'zeros', 'normal', 'xavier_normal', 'forward'}, required=False, default="forward", type=str)
     parser.add_argument('-dp','--dropout', help=f"Dropout level", required=False, default=0, type=float)
     parser.add_argument('-o','--output_dir', help=f"Output directory where training results are stored", required=False, default=None, type=str)
     args = vars(parser.parse_args())
@@ -55,28 +55,33 @@ def main():
     train_dataloader = DataLoader(training_data, batch_size=32)
     val_dataloader = DataLoader(val_data, batch_size=32)
 
-    if train == "bp":
-        model = BPSimpleRegressor(
-            dropout=dropout
-        ).to(device) 
+    if model == 'reg':
+        if train == 'bp':
+            model = BPSimpleRegressor(
+                dropout=dropout
+            ).to(device) 
 
-    else:
-        model = PCSimpleRegressor(
-            init=init,
-            dropout=dropout
-        ).to(device)
+        else:
+            model = PCSimpleRegressor(
+                init=init,
+                dropout=dropout
+            ).to(device)
+    elif model == 'clf':
+        raise NotImplementedError("Classifier models are not implemented yet")
+    elif model == 'trf':
+        raise NotImplementedError("Transformer models are not implemented yet")
 
     # TODO Luca mentioned adam is not suitable for PC
     # we might have to change this to SGD if it performs bad on PC
     optimizer = torch.optim.Adam(model.parameters(), lr=lr) 
     loss = torch.nn.MSELoss()
 
-    print(f"[Training started]")
-
-    if train == "bp":
+    if train == 'bp':
         trainer = BPTrainer(optimizer=optimizer, loss=loss, device=device, epochs=epochs, verbose=verbose)
-    else:
-        return
+    elif train == 'pc':
+        trainer = PCTrainer()
+
+    print(f"[Training started]")
 
     stats = trainer.fit(model, train_dataloader, val_dataloader)
     print(f"\n[Training completed]")
