@@ -1,5 +1,5 @@
 # Regression model
-- Toy model and dataset to test regularization techniques for PC
+- Toy model and dataset to compare the effect of regularization techniques on PC and BP network
 - The dataset are points sampled from a generated noisy sine wave [0,4]
 - Sampled data and the ground truth function looks [like this](https://github.com/andreakiro/bio-transformers/blob/11-refactor-repo-structure/out/images/reg/20221117111430.png)
 
