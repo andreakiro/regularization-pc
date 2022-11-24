@@ -78,7 +78,8 @@ class PCLayer(torch.nn.Module):
         Returns the current layer guess value.
 
         """
-        if len(self.x.size()) == 0: 
+        if self.init == 'forward':
+            assert len(self.x.size()) == 0
             self.x = torch.mean(μ, dim=0, keepdim=True)  # forward pass initialization
         self.ε = (self.x - μ)**2
         return self.x
