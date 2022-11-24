@@ -9,7 +9,7 @@ class BPTrainer():
         self,
         optimizer: torch.optim,
         loss: torch.nn.modules.loss,
-        device: torch.device,
+        device: torch.device = torch.device('cpu', 0),
         epochs: int = 50,
         verbose: int = 0
     ) -> None:
