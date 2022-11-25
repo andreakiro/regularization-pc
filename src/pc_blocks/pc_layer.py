@@ -7,56 +7,17 @@ class PCLayer(torch.nn.Module):
     Parameters
     ----------
     size : int
-           size of the input
-    
-    init : str
-           initialization technique PC hidden values; supported techniques:
-                - 'zeros', hidden values initialized with 0s
-                - 'normal', hidden values initialized with a normal distribution with μ=mean and σ=std
-                - 'xavier_normal', hidden values initialize with values according to the method described in 
-                  *Understanding the difficulty of training deep feedforward neural networks* - Glorot, X. & Bengio, Y. 
-                  (2010), using a normal distribution. 
-                - 'forward', hidden values initialized with the forward pass value
-
-    mean : Optional[float]
-           mean value used for normal initialization; if None when using a normal initialization, is set to 0
-
-    std : Optional[float]
-           std value used for normal initialization; if None when using a normal initialization, is set to 1
+           width of the previous output layer
     """
     def __init__(
         self, 
-        size: int, 
-        init: str,
-        mean: float = None,
-        std: float = None
+        size: int
     ) -> None:
 
         super().__init__()
         self.size = size
-        self.ε = None
-        self.init = init
-        x = torch.empty((1, self.size))
-
-        if init == 'zeros':
-            x = torch.zeros((1, self.size))
-
-        elif init == 'normal':
-            if mean is None: mean = 0
-            if std is None: std = 1
-            torch.nn.init.normal_(x, mean=mean, std=std)
-
-        elif init == 'xavier_normal':
-            torch.nn.init.xavier_normal_(x, gain=1.),
-
-        elif init == 'forward':
-            pass # forward initialisation happens in the forward method
-        else:
-            raise ValueError(f"{init} is not a valid initialization technique!")
-
-        self.x = torch.nn.Parameter(x)
-
-
+        self.x = None
+        self.ε = None 
 
     def forward(self, μ: torch.Tensor):
         """
@@ -66,7 +27,7 @@ class PCLayer(torch.nn.Module):
         (or, more precisely, the previous PC layer guess to which is applied an affine transformationm and a non-linear 
         activation function, μ) from the value that is forwarded to the next layer (x). 
         Moreover, we want to compute and store the difference between the guessed value guessed from the previous layer 
-        (μ), as we will differentiate afterwards w.r.t. these values in the energy descent (and weight update?) steps.
+        (μ), as we will differentiate afterwards w.r.t. these values in the energy descent (and weight update) steps.
 
         Parameters
         ----------
@@ -78,8 +39,50 @@ class PCLayer(torch.nn.Module):
         Returns the current layer guess value.
 
         """
-        if self.init == 'forward':
-            assert len(self.x.size()) == 0
-            self.x = torch.mean(μ, dim=0, keepdim=True)  # forward pass initialization
-        self.ε = (self.x - μ)**2
+        self.ε = torch.sum(torch.square(self.x - μ), dim=1)
         return self.x
+
+    def init(self, init, μ=0.0, σ=1.0, gain=1.0):
+        """
+        Initializes the activation of the layer neurons.
+
+        Parameters
+        ----------
+        init : str
+            initialization technique PC hidden values; supported techniques:
+                - 'zeros', hidden values initialized with 0s
+                - 'normal', hidden values initialized with a normal distribution with mean=μ and std=σ
+                - 'xavier_normal', hidden values initialize with values according to the method described in 
+                  *Understanding the difficulty of training deep feedforward neural networks* - Glorot, X. & Bengio, Y. 
+                  (2010), using a normal distribution and gain=gain. 
+                - 'forward', hidden values initialized with the forward pass value .
+
+            
+        μ : Optional[float] (default is 0.0)
+            mean value used for 'normal' or 'forward' initialization. For 'forward', set μ to the forward pass value from the previous layer.
+
+        σ : Optional[float] (default is 1.0)
+            std value used for 'normal' initialization.
+
+        gain: Optional[float] (default is 1.0)
+            gain value used for 'xavier_normal' initialization.
+        """
+
+        if init == 'zeros':
+            x = torch.zeros((1, self.size))
+
+        elif init == 'normal':
+            x = torch.empty((1, self.size))
+            torch.nn.init.normal_(x, mean=μ, std=σ)
+
+        elif init == 'xavier_normal':
+            x = torch.empty((1, self.size))
+            torch.nn.init.xavier_normal_(x, gain=gain)
+
+        elif init == 'forward':
+            x = μ
+        
+        else:
+            raise ValueError(f"{init} is not a valid initialization technique!")
+
+        self.x = torch.nn.Parameter(x)
