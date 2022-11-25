@@ -8,18 +8,15 @@ class PCLayer(torch.nn.Module):
     ----------
     size : int
            width of the previous output layer
-    """
-    def __init__(
-        self, 
-        size: int
-    ) -> None:
 
+    """
+    def __init__(self, size: int) -> None:
         super().__init__()
         self.size = size
         self.x = None
         self.ε = None 
 
-    def forward(self, μ: torch.Tensor):
+    def forward(self, μ: torch.Tensor) -> torch.nn.Parameter:
         """
         Forward pass of the PC layer.
 
@@ -42,13 +39,13 @@ class PCLayer(torch.nn.Module):
         self.ε = torch.sum(torch.square(self.x - μ), dim=1)
         return self.x
 
-    def init(self, init, μ=0.0, σ=1.0, gain=1.0):
+    def init(self, init='forward', μ=0.0, σ=1.0, gain=1.0) -> None:
         """
         Initializes the activation of the layer neurons.
 
         Parameters
         ----------
-        init : str
+        init : str (default is 'forward')
             initialization technique PC hidden values; supported techniques:
                 - 'zeros', hidden values initialized with 0s
                 - 'normal', hidden values initialized with a normal distribution with mean=μ and std=σ
@@ -66,22 +63,18 @@ class PCLayer(torch.nn.Module):
 
         gain: Optional[float] (default is 1.0)
             gain value used for 'xavier_normal' initialization.
-        """
 
+        """
         if init == 'zeros':
             x = torch.zeros((1, self.size))
-
         elif init == 'normal':
             x = torch.empty((1, self.size))
             torch.nn.init.normal_(x, mean=μ, std=σ)
-
         elif init == 'xavier_normal':
             x = torch.empty((1, self.size))
             torch.nn.init.xavier_normal_(x, gain=gain)
-
         elif init == 'forward':
             x = μ
-        
         else:
             raise ValueError(f"{init} is not a valid initialization technique!")
 
