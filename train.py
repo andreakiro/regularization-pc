@@ -4,6 +4,8 @@ import argparse
 import torch
 import json
 import os
+import random
+import numpy as np
 
 from src.utils import create_noisy_sinus, plot
 from src.mlp.datasets import SinusDataset
@@ -24,12 +26,16 @@ def read_arguments():
     parser.add_argument('-v','--verbose', help=f"Verbosity level", required=False, default=0, type=int)
     parser.add_argument('-i','--init', help=f"PC initialization technique", choices={'zeros', 'normal', 'xavier_normal', 'forward'}, required=False, default="forward", type=str)
     parser.add_argument('-dp','--dropout', help=f"Dropout level", required=False, default=0, type=float)
-    parser.add_argument('-o','--output_dir', help=f"Output directory where training results are stored", required=False, default=None, type=str)
+    parser.add_argument('-o','--output_dir', help=f"Output directory where training results are stored", required=False, default='out', type=str)
+    parser.add_argument('-b','--batch-size', help=f"Batch size used for training and evaluation", required=False, default=32, type=int)
     args = vars(parser.parse_args())
     return args
 
 
 def main():
+    torch.manual_seed(0)
+    random.seed(0)
+    np.random.seed(0)
 
     args = read_arguments()
 
@@ -43,6 +49,8 @@ def main():
     out_dir = args['output_dir']
     dropout = args['dropout']
     init = args['init']
+    model_type = args['model']
+    batch_size = args['batch_size']
 
     data_path = os.path.join(ROOT_DIR, "src/data/noisy_sinus.npy")
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
@@ -52,34 +60,29 @@ def main():
     val_size = len(dataset) - train_size
     training_data, val_data = random_split(dataset, [train_size, val_size], generator=torch.Generator().manual_seed(42))
 
-    train_dataloader = DataLoader(training_data, batch_size=32)
-    val_dataloader = DataLoader(val_data, batch_size=32)
+    train_dataloader = DataLoader(training_data, batch_size=batch_size)
+    val_dataloader = DataLoader(val_data, batch_size=batch_size)
 
-    if model == 'reg':
+    if model_type == 'reg':
         if train == 'bp':
-            model = BPSimpleRegressor(
-                dropout=dropout
-            ).to(device) 
+            model = BPSimpleRegressor(dropout=dropout).to(device) 
 
         else:
-            model = PCSimpleRegressor(
-                init=init,
-                dropout=dropout
-            ).to(device)
-    elif model == 'clf':
+            model = PCSimpleRegressor(dropout=dropout).to(device)
+    elif model_type == 'clf':
         raise NotImplementedError("Classifier models are not implemented yet")
-    elif model == 'trf':
+    elif model_type == 'trf':
         raise NotImplementedError("Transformer models are not implemented yet")
 
     # TODO Luca mentioned adam is not suitable for PC
     # we might have to change this to SGD if it performs bad on PC
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr) 
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     loss = torch.nn.MSELoss()
 
     if train == 'bp':
         trainer = BPTrainer(optimizer=optimizer, loss=loss, device=device, epochs=epochs, verbose=verbose)
     elif train == 'pc':
-        trainer = PCTrainer()
+        trainer = PCTrainer(optimizer=optimizer, loss=loss, device=device, init=init, epochs=epochs, verbose=verbose)
 
     print(f"[Training started]")
 
