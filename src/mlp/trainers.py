@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 import time
+import os
 
 class BPTrainer():
 
@@ -10,31 +11,40 @@ class BPTrainer():
         self,
         optimizer: torch.optim,
         loss: torch.nn.modules.loss,
+        model_save_folder: str,
+        log_save_folder: str,
+        checkpoint_frequency: int = 1,
+        epochs: int = 50,
+        early_stopping: int = 50,
         device: torch.device = torch.device('cpu', 0),
-        epochs: int = 10,
-        verbose: int = 0
-    ) -> None:
+        verbose: int = 0,
+        val_loss = [],
+        train_loss = []
+    ):
 
         self.optimizer = optimizer
         self.loss = loss
         self.verbose = verbose
         self.epochs = epochs
         self.device = device
-
-        self.train_loss = []
-        self.val_loss = []
+        self.model_save_folder = model_save_folder
+        self.log_save_folder = log_save_folder
+        self.checkpoint_frequency = checkpoint_frequency
+        self.early_stopping = early_stopping
+        self.train_loss = train_loss
+        self.val_loss = val_loss
 
     def fit(
         self,
         model: nn.Module,
         train_dataloader: torch.utils.data.DataLoader,
-        val_dataloader: torch.utils.data.DataLoader
-    ) -> dict:
-
+        val_dataloader: torch.utils.data.DataLoader,
+        start_epoch: int = 0
+    ):
         self.model = model.to(self.device)
         start = time.time()
 
-        for epoch in range(self.epochs):
+        for epoch in range(self.epochs)[start_epoch:]:
 
             self.model.train()
             tmp_loss = []
@@ -59,7 +69,22 @@ class BPTrainer():
                         
             if self.verbose:
                 print("[Epoch %d/%d] train loss: %.5f, test loss: %.5f" % (epoch+1, self.epochs, self.train_loss[-1], self.val_loss[-1]))
-
+            
+            # checkpoint model every 30 epochs
+            if (epoch % self.checkpoint_frequency == 0) or (epoch == self.epochs-1):
+                torch.save({
+                    'model_state_dict': model.state_dict(),
+                    'optimizer_state_dict': self.optimizer.state_dict()
+                    }, os.path.join(self.model_save_folder, f"checkpoint_{epoch}.pt"))
+            
+            # save validation losses every epoch
+            np.save(file = os.path.join(self.log_save_folder, "validation_losses.npy"), arr = np.array(self.val_loss))
+            np.save(file = os.path.join(self.log_save_folder, "train_losses.npy"), arr = np.array(self.train_loss))
+            
+            # check for early stopping
+            if self.check_early_stopping():
+                print(f"Early stopping induced, evaluation loss has not improved for the last {self.early_stopping} epochs.")
+                break
         end = time.time()
 
         stats = dict()
@@ -69,14 +94,13 @@ class BPTrainer():
         stats['time'] = end - start
 
         return stats
+    
+    def check_early_stopping(self):
+        if len(self.val_loss) <= self.early_stopping:
+            return False
+        else:
+            return max(self.val_loss[-self.early_stopping-1:-2]) <= self.val_loss[-1]
 
-    def pred(self, pred_dataloader):
-        X, pred = [], []
-        for batch, _ in pred_dataloader:
-            for x in batch:
-                X.append(x.detach().cpu().numpy())
-                pred.append(self.model(x).detach().cpu().numpy())
-        return X, pred
 
 class PCTrainer():
     """
@@ -112,9 +136,6 @@ class PCTrainer():
         self.epochs = epochs
         self.iterations = iterations
         self.verbose = verbose
-
-        self.train_loss = []
-        self.val_loss = []
     
     def fit(
         self,
@@ -213,11 +234,3 @@ class PCTrainer():
         stats['time'] = end - start
 
         return stats
-
-    def pred(self, pred_dataloader):
-        X, pred = [], []
-        for batch, _ in pred_dataloader:
-            for x in batch:
-                X.append(x.detach().cpu().numpy())
-                pred.append(self.model(x).detach().cpu().numpy())
-        return X, pred        
