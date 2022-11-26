@@ -136,12 +136,15 @@ class PCTrainer():
         self.epochs = epochs
         self.iterations = iterations
         self.verbose = verbose
+        self.train_loss = []
+        self.val_loss = []
     
     def fit(
         self,
         model: nn.Module,
         train_dataloader: torch.utils.data.DataLoader,
-        val_dataloader: torch.utils.data.DataLoader
+        val_dataloader: torch.utils.data.DataLoader,
+        start_epoch = 0
     ) -> dict:
 
         self.model = model.to(self.device)
