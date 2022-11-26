@@ -106,6 +106,21 @@ class PCSimpleRegressor(nn.Module):
         return μ_3
 
     def pc_forward(self, input) -> torch.Tensor:
+        """
+        Computes a predictive coding forward pass through the network.
+        
+        Note this only does local computations.
+
+        Parameters
+        ----------
+        input: torch.Tensor
+                the input data on which to compute the output.
+        
+        Returns
+        -------
+        Returns the activation of the output neuron, i.e. the last pc layer.
+        
+        """
         μ_1 = self.linear_1(input)
         μ_1 = self.dropout(μ_1)
         μ_1 = torch.relu(μ_1)

@@ -11,7 +11,7 @@ class BPTrainer():
         optimizer: torch.optim,
         loss: torch.nn.modules.loss,
         device: torch.device = torch.device('cpu', 0),
-        epochs: int = 50,
+        epochs: int = 10,
         verbose: int = 0
     ) -> None:
 
@@ -101,7 +101,7 @@ class PCTrainer():
         device: torch.device = torch.device('cpu', 0),
         init: str = 'forward',
         epochs: int = 50,
-        iterations: int = 10,
+        iterations: int = 50,
         verbose: int = 0
     ) -> None:
 
@@ -132,6 +132,9 @@ class PCTrainer():
             self.model.train()    
             tmp_loss = []
             for X_train, y_train in train_dataloader:
+                if y_train.size(dim=0) > 1:
+                    raise ValueError("PC only works for batch size 1")
+
                 X_train, y_train = X_train.to(self.device), y_train.to(self.device)
 
                 self.w_optimizer.zero_grad()
@@ -145,6 +148,15 @@ class PCTrainer():
                         self.model.predicted_activations
                     ):
                         pc_layer.init(self.init, predicted_activation)
+                elif self.init == 'zeros':
+                    for pc_layer in self.model.pc_layers:
+                        pc_layer.init(self.init)
+                elif self.init == 'normal':
+                    for pc_layer in self.model.pc_layers:
+                        pc_layer.init(self.init)
+                elif self.init == 'xavier-normal':
+                    for pc_layer in self.model.pc_layers:
+                        pc_layer.init(self.init)
                 else:
                     raise NotImplementedError(f"{self.init} currently not implemented")
 
@@ -177,6 +189,9 @@ class PCTrainer():
             with torch.no_grad():
                 tmp_loss = []
                 for X_val, y_val in val_dataloader:
+                    if y_train.size(dim=0) > 1:
+                        raise ValueError("PC only works for batch size 1")
+
                     X_val, y_val = X_val.to(self.device), y_val.to(self.device)
                     
                     # do a regular forward pass
