@@ -100,8 +100,8 @@ class PCTrainer():
         loss: torch.nn.modules.loss,
         device: torch.device = torch.device('cpu', 0),
         init: str = 'forward',
-        epochs: int = 50,
-        iterations: int = 50,
+        epochs: int = 10,
+        iterations: int = 10,
         verbose: int = 0
     ) -> None:
 
