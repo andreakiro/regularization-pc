@@ -1,6 +1,11 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import os
+import torch
+import requests
+from torchtext.data.utils import get_tokenizer
+from torchtext.vocab import build_vocab_from_iterator
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -40,3 +45,33 @@ def plot(x, observations, ground_truth=None, outfile=None):
     plt.legend(loc="best")
     if outfile is not None: plt.savefig(outfile)
     plt.show()
+
+def generate_square_subsequent_mask(sz: int):
+    """Generates an upper-triangular matrix of -inf, with zeros on diag."""
+    return torch.triu(torch.ones(sz, sz) * float('-inf'), diagonal=1)
+
+def create_headline_data():
+    # dataset for transformer trained for natural language generation
+    folder_path = create_data_folder()
+    target_file = os.path.join(folder_path, "headlines.csv")
+    if not os.path.exists(target_file):
+        # download data if not existent yet
+        print("Downloading dataset...")
+        with requests.Session() as s:
+            response = s.get("https://drive.google.com/u/0/uc?id=1sKEXpxbw8Xipz2QFUz0BvnHjIYLf2Rhf&export=download")
+            decoded_content = response.content.decode('utf-8')
+        with open(target_file, "w") as f:
+            f.write(decoded_content)        
+        print("...Done")
+    
+    vocab_path = os.path.join(folder_path, "headlines_vocabulary.pth")
+    if not os.path.exists(vocab_path):    
+        # create and save vocabulary if not existent yet
+        print("Creating Vocabulary...")
+        tokenizer = get_tokenizer('basic_english')
+        df = pd.read_csv(target_file)
+        headlines_to_one_text = df['headline_text'].agg(lambda x: ' '.join(x.dropna())).split(' ')
+        vocab = build_vocab_from_iterator(map(tokenizer, headlines_to_one_text), specials=['<unk>'])
+        vocab.set_default_index(vocab['<unk>'])
+        torch.save(vocab, vocab_path)
+        print("... Done")
