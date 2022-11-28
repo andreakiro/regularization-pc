@@ -122,7 +122,7 @@ class PCTrainer():
         self,
         optimizer,
         loss: torch.nn.modules.loss,
-        device: torch.device = torch.device('cpu', 0),
+        device: torch.device = torch.device('cpu'),
         init: str = 'forward',
         epochs: int = 10,
         iterations: int = 10,
