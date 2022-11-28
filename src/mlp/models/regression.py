@@ -54,7 +54,7 @@ class PCSimpleRegressor(nn.Module):
     """
     Simple ANN regressor, for predictive coding experiments. 
     
-    Consists of three linear layers with input and output layer having width 1 and the hidden layer having width 1024.
+    Consists of an input and an output layer having width 1 and two hidden layers having width 1024.
     Also has three pc layers that hold activations and prediction errors of the linear layers.
 
     Parameters
