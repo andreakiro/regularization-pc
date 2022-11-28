@@ -11,7 +11,7 @@ class BPSimpleRegressor(nn.Module):
     """
     Simple ANN regressor, for backprop experiments.
 
-    Consists of three linear layers with input and output layer having width 1 and the hidden layer having width 1024.
+    Consists of an input and an output layer having width 1 and two hidden layers having width 1024.
 
     Parameters
     ----------
