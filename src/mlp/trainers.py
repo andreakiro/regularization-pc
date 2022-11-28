@@ -152,7 +152,7 @@ class PCTrainer():
         
         start = time.time()
         
-        for epoch in range(self.epochs):
+        for epoch in range(self.epochs)[start_epoch:]:
             self.model.train()    
             tmp_loss = []
             for X_train, y_train in train_dataloader:
