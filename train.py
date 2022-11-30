@@ -32,6 +32,7 @@ def read_arguments():
     parser.add_argument('-cf','--checkpoint_frequency', help=f"checkpoint frequency in epochs", required=False, default=1, type=int)
     parser.add_argument('-es','--early_stopping', help=f"the number of past epochs taken into account for early_stopping", required=False, default=300, type=int)
     parser.add_argument('-b','--batch-size', help=f"Batch size used for training and evaluation", required=False, default=32, type=int)
+    parser.add_argument('-lg','--log', help=f"Log info and results of the model or not", required=False, default=False, type=bool)
     args = vars(parser.parse_args())
     return args
 
@@ -55,6 +56,7 @@ def main():
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     model_type = args['model']
     batch_size = args['batch_size']
+    log = args['log']
 
     # saving paths
     model_save_dir = create_model_save_folder(args["model"], run_name)
@@ -141,22 +143,21 @@ def main():
     # visualize predictions on validation
     if arg_plot:
         outfile = os.path.join(image_dir, dt_string+'.png')
-        plot(X, y, dataset.gt, outfile=outfile)
+        plot(X, y, dataset.gt, outfile=outfile if log else None)
     
     # save model run parameters
-    outfile = os.path.join(log_dir, dt_string+'.json')
-
-    log = {
-        "framework" : train,
-        "epochs" : epochs,
-        "optimizer" : type (optimizer).__name__,
-        "loss" : loss._get_name(),
-        "lr" : lr,
-        "results" : stats
-    }
-
-    with open(outfile, 'w') as f:
-        json.dump(log, f, indent=2)
+    if log:
+        outfile = os.path.join(log_dir, dt_string+'.json')
+        log = {
+            "framework" : train,
+            "epochs" : epochs,
+            "optimizer" : type (optimizer).__name__,
+            "loss" : loss._get_name(),
+            "lr" : lr,
+            "results" : stats
+        }
+        with open(outfile, 'w') as f:
+            json.dump(log, f, indent=2)
 
 if __name__ == "__main__":
     main()

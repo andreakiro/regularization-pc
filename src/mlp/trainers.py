@@ -125,7 +125,7 @@ class PCTrainer():
         device: torch.device = torch.device('cpu'),
         init: str = 'forward',
         epochs: int = 10,
-        iterations: int = 10,
+        iterations: int = 5,
         verbose: int = 0
     ) -> None:
 
@@ -137,7 +137,9 @@ class PCTrainer():
         self.iterations = iterations
         self.verbose = verbose
         self.train_loss = []
+        self.train_energy = []
         self.val_loss = []
+        self.val_energy = []
     
     def fit(
         self,
@@ -155,6 +157,7 @@ class PCTrainer():
         for epoch in range(self.epochs)[start_epoch:]:
             self.model.train()    
             tmp_loss = []
+            tmp_energy = []
             for X_train, y_train in train_dataloader:
                 if y_train.size(dim=0) > 1:
                     raise ValueError("PC only works for batch size 1")
@@ -162,7 +165,7 @@ class PCTrainer():
                 X_train, y_train = X_train.to(self.device), y_train.to(self.device)
 
                 self.w_optimizer.zero_grad()
-
+                
                 # initialize pc layers
                 if self.init == 'forward':
                     # do a regular forward pass to get initialization values
@@ -205,13 +208,19 @@ class PCTrainer():
                 # weight update step
                 self.w_optimizer.step()
 
-                tmp_loss.append(energy.detach().cpu().numpy())
+                score = self.model(X_train)
+                loss = self.loss(input=score, target=y_train)
+                tmp_loss.append(loss.detach().cpu().numpy())
+                tmp_energy.append(energy.detach().cpu().numpy())
+
             self.train_loss.append(np.average(tmp_loss))
+            self.train_energy.append(np.average(tmp_loss))
 
             self.model.eval()
             
             with torch.no_grad():
                 tmp_loss = []
+                tmp_energy = []
                 for X_val, y_val in val_dataloader:
                     if y_train.size(dim=0) > 1:
                         raise ValueError("PC only works for batch size 1")
@@ -223,10 +232,17 @@ class PCTrainer():
                     
                     energy = self.model.get_energy()
 
-                    tmp_loss.append(energy.detach().cpu().numpy())
-                self.val_loss.append(np.average(tmp_loss))      
+                    score = self.model(X_val)
+                    loss = self.loss(input=score, target=y_val)
+                    tmp_loss.append(loss.detach().cpu().numpy())   
+                    tmp_energy.append(energy.detach().cpu().numpy())  
+
+                self.val_loss.append(np.average(tmp_loss))
+                self.val_energy.append(np.average(tmp_energy))   
+
             if self.verbose:
-                print("[Epoch %d/%d] train loss: %.5f, test loss: %.5f" % (epoch+1, self.epochs, self.train_loss[-1], self.val_loss[-1]))
+                print("[Epoch %d/%d] train loss: %.5f, test loss: %.5f, train energy: %.5f, val energy: %.5f" \
+                    % (epoch+1, self.epochs, self.train_loss[-1], self.val_loss[-1], self.train_energy[-1], self.val_energy[-1]))
 
         end = time.time()
 
