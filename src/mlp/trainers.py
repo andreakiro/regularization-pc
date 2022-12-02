@@ -154,7 +154,7 @@ class PCTrainer():
         
         start = time.time()
         
-        for epoch in range(self.epochs)[start_epoch:]:
+        for epoch in range(self.epochs):
             self.model.train()    
             tmp_loss = []
             tmp_energy = []
