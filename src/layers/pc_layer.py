@@ -92,7 +92,7 @@ class PCLayer(torch.nn.Module):
             x = torch.empty((1, self.size))
             torch.nn.init.xavier_normal_(x, gain=gain)
         elif init == 'forward':
-            x = μ
+            x = μ.clone().detach()
         else:
             raise ValueError(f"{init} is not a valid initialization technique!")
         self.x = torch.nn.Parameter(x)

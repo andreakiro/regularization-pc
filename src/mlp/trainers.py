@@ -181,6 +181,7 @@ class PCTrainer():
                 
                 # convergence step
                 for _ in range(self.iterations):
+
                     self.x_optimizer.zero_grad()
 
                     # do a pc forward pass
