@@ -112,9 +112,8 @@ class PCSimpleRegressor(nn.Module):
         x_2 = self.pc_2(μ_2, init) if self.training else μ_2
         μ_3 = self.linear_3(x_2)
         x_3 = self.pc_3(μ_3, init) if self.training else μ_3
-
         return x_3
-    
+
 
     def get_energy(self):
         """
@@ -125,6 +124,7 @@ class PCSimpleRegressor(nn.Module):
         for l in self.pc_layers:
             F += l.ε
         return F
+        
     
     def fix_output(self, output):
         """

@@ -16,6 +16,7 @@ class PCLayer(torch.nn.Module):
         self.x = None
         self.ε = None 
 
+
     def forward(self, μ: torch.Tensor, init) -> torch.nn.Parameter:
         """
         Forward pass of the PC layer with optional initialization.
@@ -54,6 +55,7 @@ class PCLayer(torch.nn.Module):
 
         self.ε = torch.sum(torch.square(self.x - μ), dim=1)
         return self.x
+
 
     def init(self, init, μ=0.0, σ=1.0, gain=1.0) -> None:
         """
