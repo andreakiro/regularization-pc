@@ -1,10 +1,8 @@
 import torch.nn as nn
 import torch.nn.functional as F
 import torch
-import sys
-sys.path.append("..")
 
-from src.pc_blocks.pc_layer import PCLayer
+from src.layers import PCLayer
 
 
 class BPSimpleRegressor(nn.Module):
