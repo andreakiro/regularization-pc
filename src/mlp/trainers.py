@@ -157,13 +157,13 @@ class PCTrainer():
         start = time.time()
         
         for epoch in range(self.epochs):
+
             tmp_loss = []
             tmp_energy = []
-            for X_train, y_train in train_dataloader:
-                self.model.train()
 
-                # if y_train.size(dim=0) > 1:
-                #     raise ValueError("PC only works for batch size 1")
+            for X_train, y_train in train_dataloader:
+                
+                self.model.train()
 
                 X_train, y_train = X_train.to(self.device), y_train.to(self.device)
 
@@ -209,11 +209,11 @@ class PCTrainer():
             self.model.eval()
             
             with torch.no_grad():
+
                 tmp_loss = []
                 tmp_energy = []
+
                 for X_val, y_val in val_dataloader:
-                    # if y_train.size(dim=0) > 1:
-                    #     raise ValueError("PC only works for batch size 1")
 
                     X_val, y_val = X_val.to(self.device), y_val.to(self.device)
                     
