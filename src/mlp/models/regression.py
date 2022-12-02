@@ -75,44 +75,27 @@ class PCSimpleRegressor(nn.Module):
         self.dropout = nn.Dropout(p=dropout)
 
 
-    def forward(self, input) -> torch.Tensor:
+    def forward(self, input, init=None) -> torch.Tensor:
         """
-        Computes a forward pass through the network.
+        Computes a forward pass through the network. 
         
-        Note this works like standard forward propagation in BP networks.
-
+        If the model is in training mode, the forward pass is a predictive coding forward pass. Note this only does local computations.
+        If the model is in eval mode, the forward pass is a regular forward pass (cf. backpropagation). 
+        If init is set, it initializes the activations of the pc layers. 
+        
         Parameters
         ----------
         input: torch.Tensor
                 the input data on which to compute the output.
         
-        Returns
-        -------
-        Returns the output of the network as computed by forward propagation.
-
-        """
-        μ_1 = self.linear_1(input)
-        μ_1 = self.dropout(μ_1)
-        μ_1 = torch.relu(μ_1)
-        μ_2 = self.linear_2(μ_1)
-        μ_2 = self.dropout(μ_2)
-        μ_2 = torch.relu(μ_2)
-        μ_3 = self.linear_3(μ_2)
-
-        self.predicted_activations = [μ_1, μ_2, μ_3]
-
-        return μ_3
-
-    def pc_forward(self, input) -> torch.Tensor:
-        """
-        Computes a predictive coding forward pass through the network.
-        
-        Note this only does local computations.
-
-        Parameters
-        ----------
-        input: torch.Tensor
-                the input data on which to compute the output.
+        init : str (default is 'forward')
+            initialization technique PC hidden values; supported techniques:
+                - 'zeros', hidden values initialized with 0s
+                - 'normal', hidden values initialized with a normal distribution with mean=μ and std=σ
+                - 'xavier_normal', hidden values initialize with values according to the method described in 
+                  *Understanding the difficulty of training deep feedforward neural networks* - Glorot, X. & Bengio, Y. 
+                  (2010), using a normal distribution and gain=gain. 
+                - 'forward', hidden values initialized with the forward pass value .
         
         Returns
         -------
@@ -122,13 +105,13 @@ class PCSimpleRegressor(nn.Module):
         μ_1 = self.linear_1(input)
         μ_1 = self.dropout(μ_1)
         μ_1 = torch.relu(μ_1)
-        x_1 = self.pc_1(μ_1)
+        x_1 = self.pc_1(μ_1, init) if self.training else μ_1
         μ_2 = self.linear_2(x_1)
         μ_2 = self.dropout(μ_2)
         μ_2 = torch.relu(μ_2)
-        x_2 = self.pc_2(μ_2)
+        x_2 = self.pc_2(μ_2, init) if self.training else μ_2
         μ_3 = self.linear_3(x_2)
-        x_3 = self.pc_3(μ_3)
+        x_3 = self.pc_3(μ_3, init) if self.training else μ_3
 
         return x_3
     

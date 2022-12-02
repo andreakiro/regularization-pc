@@ -125,7 +125,8 @@ class PCTrainer():
         device: torch.device = torch.device('cpu'),
         init: str = 'forward',
         epochs: int = 10,
-        iterations: int = 5,
+        iterations: int = 100,
+        clr: float = 0.2,
         verbose: int = 0
     ) -> None:
 
@@ -135,6 +136,7 @@ class PCTrainer():
         self.init = init
         self.epochs = epochs
         self.iterations = iterations
+        self.clr = clr
         self.verbose = verbose
         self.train_loss = []
         self.train_energy = []
@@ -155,40 +157,23 @@ class PCTrainer():
         start = time.time()
         
         for epoch in range(self.epochs):
-            self.model.train()    
             tmp_loss = []
             tmp_energy = []
             for X_train, y_train in train_dataloader:
+                self.model.train()
+
                 if y_train.size(dim=0) > 1:
                     raise ValueError("PC only works for batch size 1")
 
                 X_train, y_train = X_train.to(self.device), y_train.to(self.device)
 
                 self.w_optimizer.zero_grad()
-                
-                # initialize pc layers
-                if self.init == 'forward':
-                    # do a regular forward pass to get initialization values
-                    self.model(X_train)
-                    for pc_layer, predicted_activation in zip(
-                        self.model.pc_layers, 
-                        self.model.predicted_activations
-                    ):
-                        pc_layer.init(self.init, predicted_activation)
-                elif self.init == 'zeros':
-                    for pc_layer in self.model.pc_layers:
-                        pc_layer.init(self.init)
-                elif self.init == 'normal':
-                    for pc_layer in self.model.pc_layers:
-                        pc_layer.init(self.init)
-                elif self.init == 'xavier-normal':
-                    for pc_layer in self.model.pc_layers:
-                        pc_layer.init(self.init)
-                else:
-                    raise NotImplementedError(f"{self.init} currently not implemented")
+
+                # do a pc forward pass to initialize pc layers  
+                self.model.forward(X_train, self.init)
 
                 pc_parameters = [layer.parameters() for layer in self.model.pc_layers]
-                self.x_optimizer = torch.optim.SGD(itertools.chain(*pc_parameters), 0.05)
+                self.x_optimizer = torch.optim.SGD(itertools.chain(*pc_parameters), self.clr)
                 
                 # fix last pc layer to output
                 self.model.fix_output(y_train)
@@ -199,7 +184,7 @@ class PCTrainer():
                     self.x_optimizer.zero_grad()
 
                     # do a pc forward pass
-                    self.model.pc_forward(X_train)
+                    self.model.forward(X_train)
 
                     energy = self.model.get_energy()
                     energy.backward()
@@ -208,8 +193,12 @@ class PCTrainer():
                 # weight update step
                 self.w_optimizer.step()
 
+                # do a regular forward pass for evaluation
+                self.model.eval()
                 score = self.model(X_train)
+
                 loss = self.loss(input=score, target=y_train)
+                energy = self.model.get_energy()
                 tmp_loss.append(loss.detach().cpu().numpy())
                 tmp_energy.append(energy.detach().cpu().numpy())
 
@@ -227,13 +216,11 @@ class PCTrainer():
 
                     X_val, y_val = X_val.to(self.device), y_val.to(self.device)
                     
-                    # do a regular forward pass
-                    self.model(X_val)
-                    
-                    energy = self.model.get_energy()
-
+                    # do a regular forward pass for evaluation
                     score = self.model(X_val)
+                    
                     loss = self.loss(input=score, target=y_val)
+                    energy = self.model.get_energy()
                     tmp_loss.append(loss.detach().cpu().numpy())   
                     tmp_energy.append(energy.detach().cpu().numpy())  
 

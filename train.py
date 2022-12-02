@@ -24,7 +24,9 @@ def read_arguments():
     parser.add_argument('-t','--training', help=f"Training framework, either 'bp' (backprop) or 'pc' (predictive coding)", choices={'bp', 'pc'}, required=True, type=str)
     parser.add_argument('-n','--num', help=f"Number of generated samples", required=False, default=1000, type=int)
     parser.add_argument('-l','--lr', help=f"Learning rate", required=False, default=0.001, type=float)
+    parser.add_argument('-c','--clr', help=f"PC convergence learning rate", required=False, default=0.2, type=float)
     parser.add_argument('-e','--epochs', help=f"Training epochs", required=False, default=300, type=int)
+    parser.add_argument('-it','--iterations', help=f"PC convergence iterations", required=False, default=100, type=int)
     parser.add_argument('-p','--plot', help=f"Plot the results after training or not", required=False, default=False, type=bool)
     parser.add_argument('-v','--verbose', help=f"Verbosity level", required=False, default=0, type=int)
     parser.add_argument('-i','--init', help=f"PC initialization technique", choices={'zeros', 'normal', 'xavier_normal', 'forward'}, required=False, default="forward", type=str)
@@ -44,7 +46,9 @@ def main():
 
     args = read_arguments()
     lr = args['lr']
+    clr = args['clr']
     epochs = args['epochs']
+    iterations = args['iterations']
     verbose = args['verbose']
     train = args['training']
     arg_plot = args['plot']
@@ -79,7 +83,7 @@ def main():
     if model_type == 'reg':
         if train == 'bp':
             model = BPSimpleRegressor(dropout=dropout).to(device)
-        else:
+        elif train == 'pc':
             model = PCSimpleRegressor(dropout=dropout).to(device)
     elif model_type == 'clf':
         raise NotImplementedError("Classifier models are not implemented yet")
@@ -121,7 +125,15 @@ def main():
             log_save_folder=log_dir, 
             verbose=verbose)
     elif train == 'pc':
-        trainer = PCTrainer(optimizer=optimizer, loss=loss, device=device, init=init, epochs=epochs, verbose=verbose)
+        trainer = PCTrainer(
+            optimizer=optimizer, 
+            loss=loss, 
+            device=device, 
+            init=init, 
+            epochs=epochs, 
+            iterations=iterations,
+            clr=clr,
+            verbose=verbose)
     
     print(f"[Training started]")
     stats = trainer.fit(model, train_dataloader, val_dataloader, start_epoch)

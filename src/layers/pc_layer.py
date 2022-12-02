@@ -16,30 +16,46 @@ class PCLayer(torch.nn.Module):
         self.x = None
         self.ε = None 
 
-    def forward(self, μ: torch.Tensor) -> torch.nn.Parameter:
+    def forward(self, μ: torch.Tensor, init) -> torch.nn.Parameter:
         """
-        Forward pass of the PC layer.
+        Forward pass of the PC layer with optional initialization.
 
         In the forward pass of the PC layer, we want to detach the output coming from previous layers of the network 
         (or, more precisely, the previous PC layer guess to which is applied an affine transformationm and a non-linear 
         activation function, μ) from the value that is forwarded to the next layer (x). 
         Moreover, we want to compute and store the difference between the guessed value guessed from the previous layer 
         (μ), as we will differentiate afterwards w.r.t. these values in the energy descent (and weight update) steps.
+        If init is set, the layer activation is also initialized.
 
         Parameters
         ----------
         μ : torch.Tensor 
             previous PC layer x value, to which is applied an affine transformation and an activation function
 
+        init : str (default is 'forward')
+            initialization technique PC hidden values; supported techniques:
+                - 'zeros', hidden values initialized with 0s
+                - 'normal', hidden values initialized with a normal distribution with mean=μ and std=σ
+                - 'xavier_normal', hidden values initialize with values according to the method described in 
+                  *Understanding the difficulty of training deep feedforward neural networks* - Glorot, X. & Bengio, Y. 
+                  (2010), using a normal distribution and gain=gain. 
+                - 'forward', hidden values initialized with the forward pass value .
+
         Returns
         -------
         Returns the current layer guess value.
 
         """
+        if init is not None:
+            if init == "forward":
+                self.init(init, μ)
+            else:
+                self.init(init)
+
         self.ε = torch.sum(torch.square(self.x - μ), dim=1)
         return self.x
 
-    def init(self, init='forward', μ=0.0, σ=1.0, gain=1.0) -> None:
+    def init(self, init, μ=0.0, σ=1.0, gain=1.0) -> None:
         """
         Initializes the activation of the layer neurons.
 
@@ -77,5 +93,4 @@ class PCLayer(torch.nn.Module):
             x = μ
         else:
             raise ValueError(f"{init} is not a valid initialization technique!")
-
         self.x = torch.nn.Parameter(x)
