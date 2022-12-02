@@ -6,10 +6,12 @@ import json
 import os
 import re
 import numpy as np
+import random
+import numpy as np
 
 from src.utils import create_noisy_sinus, plot, create_model_save_folder
 from src.mlp.datasets import SinusDataset
-from src.mlp.trainers import BPTrainer
+from src.mlp.trainers import BPTrainer, PCTrainer
 from src.mlp.models.regression import BPSimpleRegressor, PCSimpleRegressor
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -22,23 +24,31 @@ def read_arguments():
     parser.add_argument('-t','--training', help=f"Training framework, either 'bp' (backprop) or 'pc' (predictive coding)", choices={'bp', 'pc'}, required=True, type=str)
     parser.add_argument('-n','--num', help=f"Number of generated samples", required=False, default=1000, type=int)
     parser.add_argument('-l','--lr', help=f"Learning rate", required=False, default=0.001, type=float)
+    parser.add_argument('-c','--clr', help=f"PC convergence learning rate", required=False, default=0.2, type=float)
     parser.add_argument('-e','--epochs', help=f"Training epochs", required=False, default=300, type=int)
+    parser.add_argument('-it','--iterations', help=f"PC convergence iterations", required=False, default=100, type=int)
     parser.add_argument('-p','--plot', help=f"Plot the results after training or not", required=False, default=False, type=bool)
     parser.add_argument('-v','--verbose', help=f"Verbosity level", required=False, default=0, type=int)
-    parser.add_argument('-i','--init', help=f"PC initialization technique", required=False, default="forward", type=str)
+    parser.add_argument('-i','--init', help=f"PC initialization technique", choices={'zeros', 'normal', 'xavier_normal', 'forward'}, required=False, default="forward", type=str)
     parser.add_argument('-dp','--dropout', help=f"Dropout level", required=False, default=0, type=float)
     parser.add_argument('-cf','--checkpoint_frequency', help=f"checkpoint frequency in epochs", required=False, default=1, type=int)
     parser.add_argument('-es','--early_stopping', help=f"the number of past epochs taken into account for early_stopping", required=False, default=300, type=int)
-    
+    parser.add_argument('-b','--batch-size', help=f"Batch size used for training and evaluation", required=False, default=32, type=int)
+    parser.add_argument('-lg','--log', help=f"Log info and results of the model or not", required=False, default=False, type=bool)
     args = vars(parser.parse_args())
     return args
 
 
 def main():
+    torch.manual_seed(0)
+    random.seed(0)
+    np.random.seed(0)
 
     args = read_arguments()
     lr = args['lr']
+    clr = args['clr']
     epochs = args['epochs']
+    iterations = args['iterations']
     verbose = args['verbose']
     train = args['training']
     arg_plot = args['plot']
@@ -48,7 +58,10 @@ def main():
     early_stopping = args["early_stopping"]
     checkpoint_frequency = args['checkpoint_frequency']
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-    
+    model_type = args['model']
+    batch_size = args['batch_size']
+    log = args['log']
+
     # saving paths
     model_save_dir = create_model_save_folder(args["model"], run_name)
     log_dir = os.path.join(OUT_DIR, 'logs', args['model'], run_name)
@@ -63,24 +76,23 @@ def main():
     train_size = int(0.8 * len(dataset))
     val_size = len(dataset) - train_size
     training_data, val_data = random_split(dataset, [train_size, val_size], generator=torch.Generator().manual_seed(42))
-    
-    train_dataloader = DataLoader(training_data, batch_size=32)
-    val_dataloader = DataLoader(val_data, batch_size=32)
-    
-    # init model
-    if train == "bp":
-        model = BPSimpleRegressor(
-            dropout=dropout
-        )
-    else:
-        model = PCSimpleRegressor(
-            init=init,
-            dropout=dropout
-        )
-    
+
+    train_dataloader = DataLoader(training_data, batch_size=batch_size)
+    val_dataloader = DataLoader(val_data, batch_size=batch_size)
+
+    if model_type == 'reg':
+        if train == 'bp':
+            model = BPSimpleRegressor(dropout=dropout).to(device)
+        elif train == 'pc':
+            model = PCSimpleRegressor(dropout=dropout).to(device)
+    elif model_type == 'clf':
+        raise NotImplementedError("Classifier models are not implemented yet")
+    elif model_type == 'trf':
+        raise NotImplementedError("Transformer models are not implemented yet")
+
     # TODO Luca mentioned adam is not suitable for PC
     # we might have to change this to SGD if it performs bad on PC
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr) 
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     loss = torch.nn.MSELoss()
         
     # load last model checkpoint, optimizer checkpoint and past validation losses if existent
@@ -112,8 +124,16 @@ def main():
             model_save_folder=model_save_dir,
             log_save_folder=log_dir, 
             verbose=verbose)
-    else:
-        return
+    elif train == 'pc':
+        trainer = PCTrainer(
+            optimizer=optimizer, 
+            loss=loss, 
+            device=device, 
+            init=init, 
+            epochs=epochs, 
+            iterations=iterations,
+            clr=clr,
+            verbose=verbose)
     
     print(f"[Training started]")
     stats = trainer.fit(model, train_dataloader, val_dataloader, start_epoch)
@@ -135,22 +155,21 @@ def main():
     # visualize predictions on validation
     if arg_plot:
         outfile = os.path.join(image_dir, dt_string+'.png')
-        plot(X, y, dataset.gt, outfile=outfile)
+        plot(X, y, dataset.gt, outfile=outfile if log else None)
     
     # save model run parameters
-    outfile = os.path.join(log_dir, dt_string+'.json')
-
-    log = {
-        "framework" : train,
-        "epochs" : epochs,
-        "optimizer" : type (optimizer).__name__,
-        "loss" : loss._get_name(),
-        "lr" : lr,
-        "results" : stats
-    }
-
-    with open(outfile, 'w') as f:
-        json.dump(log, f, indent=2)
+    if log:
+        outfile = os.path.join(log_dir, dt_string+'.json')
+        log = {
+            "framework" : train,
+            "epochs" : epochs,
+            "optimizer" : type (optimizer).__name__,
+            "loss" : loss._get_name(),
+            "lr" : lr,
+            "results" : stats
+        }
+        with open(outfile, 'w') as f:
+            json.dump(log, f, indent=2)
 
 if __name__ == "__main__":
     main()
