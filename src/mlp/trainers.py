@@ -162,8 +162,8 @@ class PCTrainer():
             for X_train, y_train in train_dataloader:
                 self.model.train()
 
-                if y_train.size(dim=0) > 1:
-                    raise ValueError("PC only works for batch size 1")
+                # if y_train.size(dim=0) > 1:
+                #     raise ValueError("PC only works for batch size 1")
 
                 X_train, y_train = X_train.to(self.device), y_train.to(self.device)
 
@@ -188,7 +188,7 @@ class PCTrainer():
                     self.model.forward(X_train)
 
                     energy = self.model.get_energy()
-                    energy.backward()
+                    energy.sum().backward()
                     self.x_optimizer.step()
 
                 # weight update step
@@ -212,8 +212,8 @@ class PCTrainer():
                 tmp_loss = []
                 tmp_energy = []
                 for X_val, y_val in val_dataloader:
-                    if y_train.size(dim=0) > 1:
-                        raise ValueError("PC only works for batch size 1")
+                    # if y_train.size(dim=0) > 1:
+                    #     raise ValueError("PC only works for batch size 1")
 
                     X_val, y_val = X_val.to(self.device), y_val.to(self.device)
                     

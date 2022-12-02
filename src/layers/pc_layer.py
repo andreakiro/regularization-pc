@@ -47,17 +47,12 @@ class PCLayer(torch.nn.Module):
         Returns the current layer guess value.
 
         """
-        if init is not None:
-            if init == "forward":
-                self.init(init, μ)
-            else:
-                self.init(init)
-
+        if init is not None: self.init(init=init, μ=μ)
         self.ε = torch.sum(torch.square(self.x - μ), dim=1)
         return self.x
 
 
-    def init(self, init, μ=0.0, σ=1.0, gain=1.0) -> None:
+    def init(self, init, μ, mean=0.0, std=1.0, gain=1.0) -> None:
         """
         Initializes the activation of the layer neurons.
 
@@ -84,12 +79,12 @@ class PCLayer(torch.nn.Module):
 
         """
         if init == 'zeros':
-            x = torch.zeros((1, self.size))
+            x = torch.zeros(μ.shape)
         elif init == 'normal':
-            x = torch.empty((1, self.size))
-            torch.nn.init.normal_(x, mean=μ, std=σ)
+            x = torch.empty(μ.shape)
+            torch.nn.init.normal_(x, mean=mean, std=std)
         elif init == 'xavier_normal':
-            x = torch.empty((1, self.size))
+            x = torch.empty(μ.shape)
             torch.nn.init.xavier_normal_(x, gain=gain)
         elif init == 'forward':
             x = μ.clone().detach()
