@@ -1,6 +1,7 @@
 import torch.nn as nn
 import torch.nn.functional as F
 import torch
+from joblib import Parallel, delayed
 
 from src.layers import PCLayer
 
@@ -61,6 +62,9 @@ class PCSimpleRegressor(nn.Module):
               dropout probability
     """
     def __init__(self, dropout: float = 0.0) -> None:
+
+        self.njobs = 2
+
         super(PCSimpleRegressor, self).__init__()
         self.linear_1 = nn.Linear(1, 1024)
         self.pc_1 = PCLayer(size=1024)
@@ -68,6 +72,9 @@ class PCSimpleRegressor(nn.Module):
         self.pc_2 = PCLayer(size=1024)
         self.linear_3 = nn.Linear(1024, 1)
         self.pc_3 = PCLayer(size=1)
+
+        self.f = torch.relu
+        self.f_prime = lambda x: torch.stack([torch.relu(torch.sign(torch.diag(x[i,:,0]))) for i in range(x.shape[0])])
         
         self.linear_layers = [self.linear_1, self.linear_2, self.linear_3]
         self.pc_layers = [self.pc_1, self.pc_2, self.pc_3]
@@ -102,13 +109,14 @@ class PCSimpleRegressor(nn.Module):
         Returns the activation of the output neuron, i.e. the last pc layer.
         
         """
+        self.input = input
         μ_1 = self.linear_1(input)
         μ_1 = self.dropout(μ_1)
-        μ_1 = torch.relu(μ_1)
+        μ_1 = self.f(μ_1)
         x_1 = self.pc_1(μ_1, init) if self.training else μ_1
         μ_2 = self.linear_2(x_1)
         μ_2 = self.dropout(μ_2)
-        μ_2 = torch.relu(μ_2)
+        μ_2 = self.f(μ_2)
         x_2 = self.pc_2(μ_2, init) if self.training else μ_2
         μ_3 = self.linear_3(x_2)
         x_3 = self.pc_3(μ_3, init) if self.training else μ_3
@@ -132,3 +140,75 @@ class PCSimpleRegressor(nn.Module):
         
         """
         self.pc_layers[-1].x = torch.nn.Parameter(output)
+
+
+    # gradients computation and local W, x updates
+
+    def backward_x(self):
+        if self.njobs is not None:
+            self.grad_x = Parallel(n_jobs=4)(delayed(self.grad_xi)(i) for i in range(len(self.pc_layers[:-1])))
+        else:
+            self.grad_x = [self.grad_xi(i) for i in range(len(self.pc_layers[:-1]))]
+    
+    def backward_w(self):
+        if self.njobs is not None:
+            self.grad_w = Parallel(n_jobs=4)(delayed(self.grad_wi)(i) for i in range(len(self.pc_layers)))
+        else:
+            self.grad_w = [self.grad_wi(i) for i in range(len(self.pc_layers))]
+
+    def step_x(self, η):
+        if self.njobs is not None:
+            Parallel(n_jobs=len(self.pc_layers[:-1]))(delayed(self.step_xi)(i, η) for i in range(len(self.pc_layers[:-1])))
+        else:
+            for i in range(len(self.pc_layers[:-1])): 
+                self.step_xi(i, η)
+
+    def step_w(self, η):
+        if self.njobs is not None:
+            Parallel(n_jobs=len(self.linear_layers))(delayed(self.step_wi)(i, η) for i in range(len(self.linear_layers)))
+        else:
+            for i in range(len(self.linear_layers)):
+                self.step_wi(i, η)
+        self.linear_layers = [self.linear_1, self.linear_2, self.linear_3]
+
+    def grad_xi(self, i):
+        with torch.no_grad():
+            e_i, e_ii = self.pc_layers[i].ε.detach()[:, :, None], self.pc_layers[i+1].ε.detach()[:, :, None]
+            w_ii = self.linear_layers[i+1].weight.detach()[None, :, :].expand(e_i.shape[0], -1, -1)
+            x_i = self.pc_layers[i].x.detach()[:, :, None]
+            grad = e_i - (torch.transpose(self.f_prime(w_ii @ x_i) @ w_ii, 1, 2) @ e_ii)
+            return grad   
+
+    def grad_wi(self, i):
+        with torch.no_grad():
+            e_i = self.pc_layers[i].ε.detach()[:, :, None]
+            w_i = self.linear_layers[i].weight.detach()[None, :, :].expand(e_i.shape[0], -1, -1)
+            x_i = self.pc_layers[i-1].x.detach()[:, :, None] if i > 0 else self.input.detach()[:, :, None]
+            grad = self.f_prime(w_i @ x_i) @ e_i @ torch.transpose(x_i, 1, 2)
+            print(grad)
+            return grad 
+
+    def step_xi(self, i, η):
+        self.pc_layers[i].x = torch.nn.Parameter(self.pc_layers[i].x - torch.matmul(self.grad_x[i], torch.Tensor([η])))
+
+    def step_wi(self, i, η):
+        if i == 0:
+            self.linear_1.weight.data = self.linear_1.weight.data - torch.mul(torch.sum(self.grad_w[i], dim=0), η)
+        elif i == 1:
+            self.linear_2.weight.data = self.linear_2.weight.data - torch.mul(torch.sum(self.grad_w[i], dim=0), η)
+        elif i == 2:
+            self.linear_3.weight.data = self.linear_3.weight.data - torch.mul(torch.sum(self.grad_w[i], dim=0), η)
+
+    # to use these gradients, add the following code to the trainer
+    # # convergence step
+    # for _ in range(self.iterations):
+
+    #     self.model.forward(X_train)
+    #     self.model.backward_x()
+    #     self.model.step_x(η=0.2)
+
+    # self.model.backward_w()
+    # self.model.step_w(η=0.2)
+
+    # and change the energy computation in the pc_layer
+    # self.ε = torch.square(self.x - μ)
