@@ -146,26 +146,26 @@ class PCSimpleRegressor(nn.Module):
 
     def backward_x(self):
         if self.njobs is not None:
-            self.grad_x = Parallel(n_jobs=4)(delayed(self.grad_xi)(i) for i in range(len(self.pc_layers[:-1])))
+            self.grad_x = Parallel(n_jobs=self.njobs)(delayed(self.grad_xi)(i) for i in range(len(self.pc_layers[:-1])))
         else:
             self.grad_x = [self.grad_xi(i) for i in range(len(self.pc_layers[:-1]))]
     
     def backward_w(self):
         if self.njobs is not None:
-            self.grad_w = Parallel(n_jobs=4)(delayed(self.grad_wi)(i) for i in range(len(self.pc_layers)))
+            self.grad_w = Parallel(n_jobs=self.njobs)(delayed(self.grad_wi)(i) for i in range(len(self.pc_layers)))
         else:
             self.grad_w = [self.grad_wi(i) for i in range(len(self.pc_layers))]
 
     def step_x(self, η):
         if self.njobs is not None:
-            Parallel(n_jobs=len(self.pc_layers[:-1]))(delayed(self.step_xi)(i, η) for i in range(len(self.pc_layers[:-1])))
+            Parallel(n_jobs=self.njobs)(delayed(self.step_xi)(i, η) for i in range(len(self.pc_layers[:-1])))
         else:
             for i in range(len(self.pc_layers[:-1])): 
                 self.step_xi(i, η)
 
     def step_w(self, η):
         if self.njobs is not None:
-            Parallel(n_jobs=len(self.linear_layers))(delayed(self.step_wi)(i, η) for i in range(len(self.linear_layers)))
+            Parallel(n_jobs=self.njobs)(delayed(self.step_wi)(i, η) for i in range(len(self.linear_layers)))
         else:
             for i in range(len(self.linear_layers)):
                 self.step_wi(i, η)
