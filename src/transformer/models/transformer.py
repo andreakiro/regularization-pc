@@ -9,16 +9,15 @@ class BPTransformer(torch.nn.Module):
     Produce a probability distribution over output words via a log-softmax function over the decoder output
     """
 
-    def __init__(self, alphabet_size:int, d_model:int, max_input_len:int, num_heads:int, enc_layers:int, dim_ffnn:int, cls_pos:int = 0):
+    def __init__(self, d_model:int, max_input_len:int, num_heads:int, enc_layers:int, dim_ffnn:int, cls_pos:int = 0):
         """
         Args:
-            alphabet_size: number of words
-            d_model: dim/number of expected features in the encoder/decoder inputs
-            max_input_len: Maximum length of the input sentence
+            d_model: len of vectorized word (embedding size)
+            max_input_len: Maximum amount of words of the input sentence
             num_heads: number of heads in the multi head attention modules
             enc_layers: number of sub-layers of the encoder
-            dim_ffnn: dim of the feedforward network model
-            cls_pos: output position to be used to classify
+            dim_ffnn: dim of the feedforward network model in the encoder layers
+            cls_pos: output position to be used for decoder
             
             TODO: below params not implemented yet --> do we need this?
             scaled: boolean flag to specify whether to use normal or scaled encoder layer.
@@ -27,31 +26,37 @@ class BPTransformer(torch.nn.Module):
         """
         super().__init__()
         torch.manual_seed(0) # for reproducability
-        self.cls_pos = cls_pos
+        self.cls_pos = cls_pos # TODO: currently decoder takes all positions (cls_pos not used atm)
+        self.max_input_len = max_input_len
         
-        # embedding and positional encoding
-        self.word_embedding = torch.nn.Embedding(num_embeddings=alphabet_size, embedding_dim=d_model)
+        # positional encoding
         self.pos_encoder = PositionalEncoding(size_pe=d_model, max_len=max_input_len)
         
         # encoder
-        encoder_layer = EncoderLayer(d_model=d_model, nhead=num_heads, dim_feedforward=dim_ffnn)
-        self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=enc_layers)
+        encoder_layer = EncoderLayer(d_model=d_model, nhead=num_heads, dim_feedforward=dim_ffnn, batch_first=True)
+        self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=enc_layers, enable_nested_tensor=False)
 
-        # final linear decoder layer for the output 
-        self.decoder = nn.Linear(d_model, 1)
+        # final linear decoder layer for the output, only predicts 
+        self.decoder = nn.Linear(d_model*max_input_len, d_model)
 
-    def forward(self, w:Tensor):
+    def forward(self, w:Tensor, padding_mask, src_mask=None):
         """
         Args:
-            w: word
+            w: vectorized word
+            src_mask: aka attention mask - mask all words after seed that have not been predicted by the transformer yet (shape: (max_input_len x max_input_len))
+                      only needed during training
+            padding_mask: paddings mask
         Returns:
             single output from the output layer at specified position.
         """
         # concatenate word embeddings and positional embeddings
-        x = self.word_embedding(w) + self.pos_encoding(len(w))
+        x = w + self.pos_encoder(w)
         # encoder transformation
-        y = self.encoder(x.unsqueeze(1)).squeeze(1)
-        z = self.decoder(y[self.cls_pos])
+        if self.training:
+            y = self.encoder(x, mask=src_mask, src_key_padding_mask=padding_mask)
+        else:
+            y = self.encoder(x, src_key_padding_mask=padding_mask)
+        z = self.decoder(y.flatten(start_dim=1)) # flatten everything after batch_dim
         return z
 
 class PositionalEncoding(nn.Module):
@@ -72,7 +77,7 @@ class PositionalEncoding(nn.Module):
         pe = torch.zeros(max_len, 1, size_pe)
         
         pe[:, 0, 0::2] = torch.sin(pos * div_term)
-        pe[:, 0, 1::2] = torch.cos(pos * div_term)
+        pe[:, 0, 0::2] += torch.cos(pos * div_term)
 
         self.register_buffer("pe", pe)
 
