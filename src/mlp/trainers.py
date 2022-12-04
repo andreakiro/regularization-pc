@@ -16,9 +16,7 @@ class BPTrainer():
         epochs: int = 50,
         early_stopping: int = 50,
         device: torch.device = torch.device('cpu', 0),
-        verbose: int = 0,
-        val_loss = [],
-        train_loss = []
+        verbose: int = 0
     ):
 
         self.optimizer = optimizer
@@ -30,15 +28,15 @@ class BPTrainer():
         self.log_save_folder = log_save_folder
         self.checkpoint_frequency = checkpoint_frequency
         self.early_stopping = early_stopping
-        self.train_loss = train_loss
-        self.val_loss = val_loss
 
     def fit(
         self,
         model: nn.Module,
         train_dataloader: torch.utils.data.DataLoader,
         val_dataloader: torch.utils.data.DataLoader,
-        start_epoch: int = 0
+        start_epoch: int = 0,
+        val_loss=[],
+        train_loss=[]
     ):
         self.model = model.to(self.device)
         start = time.time()
@@ -64,10 +62,10 @@ class BPTrainer():
                     score = model(X_val)
                     loss = self.loss(input=score, target=y_val)
                     tmp_loss.append(loss.detach().cpu().numpy())
-                self.val_loss.append(np.average(tmp_loss))
+                val_loss.append(np.average(tmp_loss))
                         
             if self.verbose:
-                print("[Epoch %d/%d] train loss: %.5f, test loss: %.5f" % (epoch+1, self.epochs, self.train_loss[-1], self.val_loss[-1]))
+                print("[Epoch %d/%d] train loss: %.5f, test loss: %.5f" % (epoch+1, self.epochs, train_loss[-1], val_loss[-1]))
             
             # checkpoint model every 30 epochs
             if (epoch % self.checkpoint_frequency == 0) or (epoch == self.epochs-1):
@@ -77,8 +75,8 @@ class BPTrainer():
                     }, os.path.join(self.model_save_folder, f"checkpoint_{epoch}.pt"))
             
             # save validation losses every epoch
-            np.save(file = os.path.join(self.log_save_folder, "validation_losses.npy"), arr = np.array(self.val_loss))
-            np.save(file = os.path.join(self.log_save_folder, "train_losses.npy"), arr = np.array(self.train_loss))
+            np.save(file = os.path.join(self.log_save_folder, "validation_losses.npy"), arr = np.array(val_loss))
+            np.save(file = os.path.join(self.log_save_folder, "train_losses.npy"), arr = np.array(train_loss))
             
             # check for early stopping
             if self.check_early_stopping():
@@ -87,18 +85,18 @@ class BPTrainer():
         end = time.time()
 
         stats = dict()
-        stats["best_val_loss"] = float(min(self.val_loss))
+        stats["best_val_loss"] = float(min(val_loss))
         stats["best_train_loss"] = float(min(self.train_loss))
-        stats["best_epoch"] = int(np.argmin(self.val_loss))+1
+        stats["best_epoch"] = int(np.argmin(val_loss))+1
         stats['time'] = end - start
 
         return stats
     
-    def check_early_stopping(self):
-        if len(self.val_loss) <= self.early_stopping:
+    def check_early_stopping(self, val_loss):
+        if len(val_loss) <= self.early_stopping:
             return False
         else:
-            return max(self.val_loss[-self.early_stopping-1:-2]) <= self.val_loss[-1]
+            return max(val_loss[-self.early_stopping-1:-2]) <= val_loss[-1]
 
 
 class PCTrainer(nn.Module):
