@@ -33,7 +33,7 @@ def read_arguments():
     parser.add_argument('-cf','--checkpoint_frequency', help=f"checkpoint frequency in epochs", required=False, default=1, type=int)
     parser.add_argument('-es','--early_stopping', help=f"the number of past epochs taken into account for early_stopping", required=False, default=300, type=int)
     parser.add_argument('-nw','--num_words', help="[Transformer-Only] Amount of words that can be passed to the transformer", required=False, default=8, type=int)
-    parser.add_argument('-nh','--num_heads', help="[Transformer-Only] Number of transformer heads", required=False, default=1, type=int)
+    parser.add_argument('-nh','--num_heads', help="[Transformer-Only] Number of transformer heads", required=False, default=2, type=int)
     parser.add_argument('-el','--enc_layers', help="[Transformer-Only] Number of sub-layers in transformer encoder", required=False, default=3, type=int)
     parser.add_argument('-df','--dim_ffnn', help="[Transformer-Only] Dimension of the feedforward networks in the transformer's encoder layers", required=False, default=2, type=int)
     parser.add_argument('-cp','--cls_pos', help="[Transformer-Only] output position to be used for decoder", required=False, default=0, type=int)
@@ -82,8 +82,8 @@ def main():
     val_size = len(dataset) - train_size
     training_data, val_data = random_split(dataset, [train_size, val_size], generator=torch.Generator().manual_seed(42))
     
-    train_dataloader = DataLoader(training_data, batch_size=1)
-    val_dataloader = DataLoader(val_data, batch_size=1)
+    train_dataloader = DataLoader(training_data, batch_size=2)
+    val_dataloader = DataLoader(val_data, batch_size=2)
     
     # init model and trainer
     if train == "bp" and experiment_type == "reg":
@@ -122,7 +122,7 @@ def main():
             cls_pos = 0
         )
         optimizer = torch.optim.Adam(model.parameters(), lr=lr) 
-        loss = ...# TODO
+        loss = torch.nn.MSELoss(reduction="sum")# TODO
         trainer = BPTransformerTrainer(
             optimizer = optimizer,
             loss = loss,
@@ -164,17 +164,14 @@ def main():
     print(f'{"Best epoch": <21}: {stats["best_epoch"]}')
 
     # evaluate
-    X, y = [], []
-    for batch, _ in val_dataloader:
-        X.append(batch.detach().numpy())
-        y.append(model(batch).detach().numpy())
-    X, y = np.concatenate(X).ravel(), np.concatenate(y).ravel()
     dt_string = datetime.now().strftime("%Y%m%d%H%M%S")
-
-    # visualize predictions on validation
-    if arg_plot:
-        outfile = os.path.join(image_dir, dt_string+'.png')
-        plot(X, y, dataset.gt, outfile=outfile)
+    result = trainer.evaluate(val_dataloader, model)
+    
+    if experiment_type == "reg":
+        # visualize predictions on validation
+        if arg_plot:
+            outfile = os.path.join(image_dir, dt_string+'.png')
+            plot(*result, dataset.gt, outfile=outfile)
     
     # save model run parameters
     outfile = os.path.join(log_dir, dt_string+'.json')
