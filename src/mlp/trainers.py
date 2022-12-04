@@ -97,7 +97,14 @@ class BPTrainer():
             return False
         else:
             return max(val_loss[-self.early_stopping-1:-2]) <= val_loss[-1]
-
+        
+    def evaluate(self, val_dataloader, model):
+        X, y = [], []
+        for batch, _ in val_dataloader:
+            X.append(batch.detach().numpy())
+            y.append(model(batch).detach().numpy())
+        X, y = np.concatenate(X).ravel(), np.concatenate(y).ravel()
+        return X, y
 
 class PCTrainer(nn.Module):
 
