@@ -167,11 +167,10 @@ def main():
     dt_string = datetime.now().strftime("%Y%m%d%H%M%S")
     result = trainer.evaluate(val_dataloader, model)
     
-    if experiment_type == "reg":
+    if experiment_type == "reg" and arg_plot:
         # visualize predictions on validation
-        if arg_plot:
-            outfile = os.path.join(image_dir, dt_string+'.png')
-            plot(*result, dataset.gt, outfile=outfile)
+        outfile = os.path.join(image_dir, dt_string+'.png')
+        plot(*result, dataset.gt, outfile=outfile)
     
     # save model run parameters
     outfile = os.path.join(log_dir, dt_string+'.json')
