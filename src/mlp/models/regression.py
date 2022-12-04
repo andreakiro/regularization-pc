@@ -78,6 +78,8 @@ class PCSimpleRegressor(nn.Module):
         self.pc_layers = [self.pc_1, self.pc_2, self.pc_3]
 
         self.dropout = nn.Dropout(p=dropout)
+        
+        self.njobs = njobs
 
 
     def forward(self, input, init=None) -> torch.Tensor:
