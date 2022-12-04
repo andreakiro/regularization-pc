@@ -7,10 +7,13 @@ import os
 import re
 import numpy as np
 
-from src.utils import create_noisy_sinus, plot, create_model_save_folder
+from src.utils import create_noisy_sinus, plot, create_model_save_folder, create_headline_data
 from src.mlp.datasets import SinusDataset
+from src.transformer.datasets import HeadlineDataset
 from src.mlp.trainers import BPTrainer
 from src.mlp.models.regression import BPSimpleRegressor, PCSimpleRegressor
+from src.transformer.models.transformer import BPTransformer
+from src.transformer.trainers import BPTransformerTrainer
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 OUT_DIR = os.path.join(ROOT_DIR, 'out')
@@ -20,7 +23,7 @@ def read_arguments():
     parser.add_argument('-r', '--run', help=f"Individual run name, if reused the training is resumed", required=True, type=str)
     parser.add_argument('-m', '--model', help=f"Model selection for experiments", choices={'reg', 'clf', 'trf'}, required=True, type=str)
     parser.add_argument('-t','--training', help=f"Training framework, either 'bp' (backprop) or 'pc' (predictive coding)", choices={'bp', 'pc'}, required=True, type=str)
-    parser.add_argument('-n','--num', help=f"Number of generated samples", required=False, default=1000, type=int)
+    parser.add_argument('-n','--num', help=f"Number of samples in the dataset", required=False, default=1000, type=int)
     parser.add_argument('-l','--lr', help=f"Learning rate", required=False, default=0.001, type=float)
     parser.add_argument('-e','--epochs', help=f"Training epochs", required=False, default=300, type=int)
     parser.add_argument('-p','--plot', help=f"Plot the results after training or not", required=False, default=False, type=bool)
@@ -29,6 +32,11 @@ def read_arguments():
     parser.add_argument('-dp','--dropout', help=f"Dropout level", required=False, default=0, type=float)
     parser.add_argument('-cf','--checkpoint_frequency', help=f"checkpoint frequency in epochs", required=False, default=1, type=int)
     parser.add_argument('-es','--early_stopping', help=f"the number of past epochs taken into account for early_stopping", required=False, default=300, type=int)
+    parser.add_argument('-nw','--num_words', help="[Transformer-Only] Amount of words that can be passed to the transformer", required=False, default=8, type=int)
+    parser.add_argument('-nh','--num_heads', help="[Transformer-Only] Number of transformer heads", required=False, default=5, type=int)
+    parser.add_argument('-el','--enc_layers', help="[Transformer-Only] Number of sub-layers in transformer encoder", required=False, default=3, type=int)
+    parser.add_argument('-df','--dim_ffnn', help="[Transformer-Only] Dimension of the feedforward networks in the transformer's encoder layers", required=False, default=0, type=int)
+    parser.add_argument('-cp','--cls_pos', help="[Transformer-Only] output position to be used for decoder", required=False, default=0, type=int)
     
     args = vars(parser.parse_args())
     return args
@@ -37,6 +45,8 @@ def read_arguments():
 def main():
 
     args = read_arguments()
+    experiment_type = args['model']
+    num_samples = args['num']
     lr = args['lr']
     epochs = args['epochs']
     verbose = args['verbose']
@@ -55,11 +65,19 @@ def main():
     os.makedirs(log_dir, exist_ok=True)
     image_dir = os.path.join(OUT_DIR, 'images', args['model'], run_name)
     os.makedirs(image_dir, exist_ok=True)
-    data_path = os.path.join(ROOT_DIR, "src/data/noisy_sinus.npy")
     
     # prepare data and dataloaders
-    create_noisy_sinus(num_samples=args['num']) # create the data, if they don't exist
-    dataset = SinusDataset(data_path=data_path, device=device)
+    if experiment_type == "reg":
+        data_path = os.path.join(ROOT_DIR, "data/noisy_sinus.npy")
+        create_noisy_sinus(num_samples=args['num']) # create the data, if they don't exist
+        dataset = SinusDataset(data_path=data_path, device=device)
+    
+    elif experiment_type == "trf":
+        data_path = os.path.join(ROOT_DIR, "data", "headlines_preprocessed.pkl")
+        create_headline_data()
+        dataset = HeadlineDataset(data_path=data_path, device=device, data_folder_path = os.path.join(ROOT_DIR, "data"))
+    
+    # create training and validation split
     train_size = int(0.8 * len(dataset))
     val_size = len(dataset) - train_size
     training_data, val_data = random_split(dataset, [train_size, val_size], generator=torch.Generator().manual_seed(42))
@@ -67,21 +85,58 @@ def main():
     train_dataloader = DataLoader(training_data, batch_size=32)
     val_dataloader = DataLoader(val_data, batch_size=32)
     
-    # init model
-    if train == "bp":
+    # init model and trainer
+    if train == "bp" and experiment_type == "reg":
         model = BPSimpleRegressor(
             dropout=dropout
         )
-    else:
+        # TODO Luca mentioned adam is not suitable for PC
+        # we might have to change this to SGD if it performs bad on PC
+        optimizer = torch.optim.Adam(model.parameters(), lr=lr) 
+        loss = torch.nn.MSELoss()
+        trainer = BPTrainer(
+            optimizer=optimizer, 
+            loss=loss,
+            checkpoint_frequency=checkpoint_frequency, 
+            device=device, 
+            epochs=epochs, 
+            early_stopping=early_stopping,
+            model_save_folder=model_save_dir,
+            log_save_folder=log_dir, 
+            verbose=verbose)
+        
+    elif experiment_type == "reg":
         model = PCSimpleRegressor(
             init=init,
             dropout=dropout
         )
-    
-    # TODO Luca mentioned adam is not suitable for PC
-    # we might have to change this to SGD if it performs bad on PC
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr) 
-    loss = torch.nn.MSELoss()
+    elif train == "bp" and experiment_type == "trf":
+        if args['num_words'] > dataset.max_sequence_len:
+            raise Exception(f"The parameter 'num_words' cannot be larger than the maximum amount of words, which is {dataset.max_sequence_len}")
+        model = BPTransformer(
+            d_model = dataset.d_model, 
+            max_input_len = args['num_words'], 
+            num_heads = args['num_heads'],
+            enc_layers = args['enc_layers'], 
+            dim_ffnn = args['dim_ffnn'],
+            cls_pos = 0
+        )
+        optimizer = torch.optim.Adam(model.parameters(), lr=lr) 
+        loss = ...# TODO
+        trainer = BPTransformerTrainer(
+            optimizer = optimizer,
+            loss = loss,
+            model_save_folder = model_save_dir,
+            log_save_folder = log_dir,
+            input_size = args['num_words'],
+            checkpoint_frequency = checkpoint_frequency,
+            epochs = epochs,
+            early_stopping = early_stopping,
+            device = device,
+            verbose = verbose
+        )
+    else:
+        raise NotImplementedError
         
     # load last model checkpoint, optimizer checkpoint and past validation losses if existent
     start_epoch = 0
@@ -98,25 +153,9 @@ def main():
         train_losses = np.load(os.path.join(log_dir, f"train_losses.npy")).tolist()
     model.to(device)
     
-    # init Trainers
-    if train == "bp":
-        trainer = BPTrainer(
-            optimizer=optimizer, 
-            loss=loss,
-            checkpoint_frequency=checkpoint_frequency, 
-            device=device, 
-            epochs=epochs, 
-            early_stopping=early_stopping,
-            val_loss=validation_losses,
-            train_loss=train_losses,
-            model_save_folder=model_save_dir,
-            log_save_folder=log_dir, 
-            verbose=verbose)
-    else:
-        return
     
     print(f"[Training started]")
-    stats = trainer.fit(model, train_dataloader, val_dataloader, start_epoch)
+    stats = trainer.fit(model, train_dataloader, val_dataloader, start_epoch, val_loss=validation_losses, train_loss=train_losses)
     print(f"\n[Training completed]")
     print(f'{"Number of epochs": <21}: {epochs}')
     print(f'{"Elapsed time": <21}: {round(stats["time"], 2)}s')
