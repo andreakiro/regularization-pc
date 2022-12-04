@@ -22,7 +22,8 @@ class HeadlineDataset(torch.utils.data.Dataset):
         self.device = device
         self.d_model = 100
         self.max_sequence_len = 15
-        self.data = df["vectorized_headline"]
+        self.data = df["padded_vectorized_headline"]
+        self.padding_masks = df["padding_mask"] # used in transformer to not give attention for the padded sequence
         print("...Done")
 
     def __len__(self):
@@ -32,4 +33,7 @@ class HeadlineDataset(torch.utils.data.Dataset):
         if torch.is_tensor(indices): indices = indices.tolist()
         if isinstance(indices, int): 
             indices = [indices]
-        return torch.Tensor(np.concatenate(self.data[self.data.index.isin(indices)].values, axis=0)).to(self.device)
+        index_mask = self.data.index.isin(indices)
+        x = torch.Tensor(np.concatenate(self.data[index_mask].values, axis=0)).to(self.device)
+        padding_mask = torch.Tensor(np.concatenate(self.padding_masks[index_mask].values, axis=0)).to(self.device)
+        return x, padding_mask
