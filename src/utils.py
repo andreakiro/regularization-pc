@@ -2,10 +2,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import os
-import torch
+import re
 import requests
 from torchtext.data.utils import get_tokenizer
-from torchtext.vocab import build_vocab_from_iterator
+from gensim.models import Word2Vec
+
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -46,10 +47,6 @@ def plot(x, observations, ground_truth=None, outfile=None):
     if outfile is not None: plt.savefig(outfile)
     plt.show()
 
-def generate_square_subsequent_mask(sz: int):
-    """Generates an upper-triangular matrix of -inf, with zeros on diag."""
-    return torch.triu(torch.ones(sz, sz) * float('-inf'), diagonal=1)
-
 def create_headline_data():
     # dataset for transformer trained for natural language generation
     folder_path = create_data_folder()
@@ -61,17 +58,53 @@ def create_headline_data():
             response = s.get("https://drive.google.com/u/0/uc?id=1sKEXpxbw8Xipz2QFUz0BvnHjIYLf2Rhf&export=download")
             decoded_content = response.content.decode('utf-8')
         with open(target_file, "w") as f:
-            f.write(decoded_content)        
+            f.write(decoded_content)       
         print("...Done")
     
-    vocab_path = os.path.join(folder_path, "headlines_vocabulary.pth")
-    if not os.path.exists(vocab_path):    
+    preprocessed_path = os.path.join(folder_path, "headlines_preprocessed.pkl")
+    word_2_vec_path = os.path.join(folder_path, "word2vec.model")
+    word_2_vec_pair_path = os.path.join(folder_path, "word2vec.wordvectors")
+    if not os.path.exists(preprocessed_path):
         # create and save vocabulary if not existent yet
-        print("Creating Vocabulary...")
         tokenizer = get_tokenizer('basic_english')
         df = pd.read_csv(target_file)
-        headlines_to_one_text = df['headline_text'].agg(lambda x: ' '.join(x.dropna())).split(' ')
-        vocab = build_vocab_from_iterator(map(tokenizer, headlines_to_one_text), specials=['<unk>'])
-        vocab.set_default_index(vocab['<unk>'])
-        torch.save(vocab, vocab_path)
+        
+        print("Cleaning Data...")
+        # append one 0-line for the vocabulary
+        df = pd.concat([df, pd.DataFrame({"publish_date": [20211232.0], "headline_text": ["0"]})], ignore_index=True)
+        def clean(data):
+            clean = data.lower()
+            clean = re.sub('[^a-zA-Z0-9]', ' ', clean)
+            clean = re.sub("&lt;/?.*?&gt;", " &lt;&gt; ", clean)
+            clean = tokenizer(clean)
+            return clean
+        df["cleaned_headline"] = df["headline_text"].apply(lambda row : clean(row))
+        
+        print("Padding Data...")
+        df["num_words"] = df["cleaned_headline"].apply(lambda row : len(row))
+        max_headline_len = df["num_words"].max()
+        def pad(data):
+            len_padded = max_headline_len - len(data)
+            pad = ["0"]*len_padded
+            padded_data = data + pad
+            return padded_data
+        df["padded_cleaned_headline"] = df["cleaned_headline"].apply(lambda row : pad(row))
+        
+        print("Creating Word2Vec Model...")
+        model = Word2Vec(sentences=df["cleaned_headline"], vector_size= 100, window = 3, min_count=1, workers=4)
+        
+        print("Saving Word2Vec model and vector mappings...")
+        model.save(word_2_vec_path)
+        word_vectors = model.wv
+        word_vectors.save(word_2_vec_pair_path)
+        
+        print("Vectorizing Data with Word2Vec Model")
+        def vectorize(data):
+            vec = np.array([model.wv[word] for word in data])
+            return vec
+        df["vectorized_headline"] = df["padded_cleaned_headline"].apply(lambda row : vectorize(row))
+        
+        print("Saving preprocessed dataframe...")
+        df.to_pickle(preprocessed_path)
         print("... Done")
+        
