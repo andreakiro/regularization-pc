@@ -1,9 +1,6 @@
 import torch
-import numpy as np
 import pandas as pd
-from torchtext.data.utils import get_tokenizer
-from utils import ROOT_DIR
-import os
+import numpy as np
 
 class HeadlineDataset(torch.utils.data.Dataset):
     """
@@ -15,26 +12,24 @@ class HeadlineDataset(torch.utils.data.Dataset):
     def __init__(
         self,
         data_path: str,
+        data_folder_path: str,
         device: torch.device
     ):
-
-        with open(data_path, 'r') as target_file:
-            df = pd.read_csv(target_file)
-        tokenizer = get_tokenizer('basic_english')
-        vocab = torch.load(os.path.join(ROOT_DIR, "data", "headlines_vocabulary.pth"))
-        vocab.set_default_index(vocab['<unk>'])
-        
-        def data_process(raw_text_iter):
-            """Converts raw text into a flat Tensor"""
-            data = [torch.tensor(vocab(tokenizer(item)), dtype=torch.long) for item in raw_text_iter]
-            return torch.cat(tuple(filter(lambda t: t.numel() > 0, data)))
-        
-        self.data = data_process(df["headline_text"]).to(device)
+        print("Retrieving data for training...")
+        with open(data_path, 'rb') as target_file:
+            df = pd.read_pickle(target_file)
+        self.data_folder_path = data_folder_path
+        self.device = device
+        self.d_model = 100
+        self.max_sequence_len = 15
+        self.data = df["vectorized_headline"]
+        print("...Done")
 
     def __len__(self):
         return len(self.data)
 
-    def __getitem__(self, idx):
-        if torch.is_tensor(idx): idx = idx.tolist()
-        x = self.data[idx]
-        return x
+    def __getitem__(self, indices):
+        if torch.is_tensor(indices): indices = indices.tolist()
+        if isinstance(indices, int): 
+            indices = [indices]
+        return torch.Tensor(np.concatenate(self.data[self.data.index.isin(indices)].values, axis=0)).to(self.device)
