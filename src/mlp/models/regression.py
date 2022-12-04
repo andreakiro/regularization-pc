@@ -61,9 +61,7 @@ class PCSimpleRegressor(nn.Module):
     dropout : Optional[float] (default is 0)
               dropout probability
     """
-    def __init__(self, dropout: float = 0.0) -> None:
-
-        self.njobs = 2
+    def __init__(self, dropout: float = 0.0, njobs = None) -> None:
 
         super(PCSimpleRegressor, self).__init__()
         self.linear_1 = nn.Linear(1, 1024)
