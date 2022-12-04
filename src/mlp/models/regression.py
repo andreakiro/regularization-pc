@@ -61,8 +61,8 @@ class PCSimpleRegressor(nn.Module):
     dropout : Optional[float] (default is 0)
               dropout probability
     """
-    def __init__(self, dropout: float = 0.0, njobs = None) -> None:
-
+    def __init__(self, dropout: float = 0.0) -> None:
+        
         super(PCSimpleRegressor, self).__init__()
         self.linear_1 = nn.Linear(1, 1024)
         self.pc_1 = PCLayer(size=1024)
@@ -79,7 +79,6 @@ class PCSimpleRegressor(nn.Module):
 
         self.dropout = nn.Dropout(p=dropout)
         
-        self.njobs = njobs
 
 
     def forward(self, input, init=None) -> torch.Tensor:
@@ -145,31 +144,17 @@ class PCSimpleRegressor(nn.Module):
     # gradients computation and local W, x updates
 
     def backward_x(self):
-        if self.njobs is not None:
-            self.grad_x = Parallel(n_jobs=self.njobs)(delayed(self.grad_xi)(i) for i in range(len(self.pc_layers[:-1])))
-        else:
-            self.grad_x = [self.grad_xi(i) for i in range(len(self.pc_layers[:-1]))]
-    
+        self.grad_x = Parallel(n_jobs=len(self.pc_layers[:-1]))(delayed(self.grad_xi)(i) for i in range(len(self.pc_layers[:-1])))
+
     def backward_w(self):
-        if self.njobs is not None:
-            self.grad_w = Parallel(n_jobs=self.njobs)(delayed(self.grad_wi)(i) for i in range(len(self.pc_layers)))
-        else:
-            self.grad_w = [self.grad_wi(i) for i in range(len(self.pc_layers))]
+        self.grad_w = Parallel(n_jobs=len(self.linear_layers))(delayed(self.grad_wi)(i) for i in range(len(self.pc_layers)))
+
 
     def step_x(self, η):
-        if self.njobs is not None:
-            Parallel(n_jobs=self.njobs)(delayed(self.step_xi)(i, η) for i in range(len(self.pc_layers[:-1])))
-        else:
-            for i in range(len(self.pc_layers[:-1])): 
-                self.step_xi(i, η)
+        Parallel(n_jobs=len(self.pc_layers[:-1]))(delayed(self.step_xi)(i, η) for i in range(len(self.pc_layers[:-1])))
 
     def step_w(self, η):
-        if self.njobs is not None:
-            Parallel(n_jobs=self.njobs)(delayed(self.step_wi)(i, η) for i in range(len(self.linear_layers)))
-        else:
-            for i in range(len(self.linear_layers)):
-                self.step_wi(i, η)
-        self.linear_layers = [self.linear_1, self.linear_2, self.linear_3]
+        Parallel(n_jobs=len(self.linear_layers))(delayed(self.step_wi)(i, η) for i in range(len(self.linear_layers)))
 
     def grad_xi(self, i):
         with torch.no_grad():
@@ -192,12 +177,8 @@ class PCSimpleRegressor(nn.Module):
         self.pc_layers[i].x = torch.nn.Parameter(self.pc_layers[i].x - torch.matmul(self.grad_x[i], torch.Tensor([η])))
 
     def step_wi(self, i, η):
-        if i == 0:
-            self.linear_1.weight.data = self.linear_1.weight.data - torch.mul(torch.sum(self.grad_w[i], dim=0), η)
-        elif i == 1:
-            self.linear_2.weight.data = self.linear_2.weight.data - torch.mul(torch.sum(self.grad_w[i], dim=0), η)
-        elif i == 2:
-            self.linear_3.weight.data = self.linear_3.weight.data - torch.mul(torch.sum(self.grad_w[i], dim=0), η)
+        self.linear_layers[i].weight.data = self.linear_layers[i].weight.data - torch.mul(torch.sum(self.grad_w[i], dim=0), η)
+
 
     # to use these gradients, add the following code to the trainer
     # # convergence step
