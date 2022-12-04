@@ -70,8 +70,6 @@ def create_headline_data():
         df = pd.read_csv(target_file)
         
         print("Cleaning Data...")
-        # append one 0-line for the vocabulary
-        df = pd.concat([df, pd.DataFrame({"publish_date": [20211232.0], "headline_text": ["0"]})], ignore_index=True)
         def clean(data):
             clean = data.lower()
             clean = re.sub('[^a-zA-Z0-9]', ' ', clean)
@@ -80,29 +78,37 @@ def create_headline_data():
             return clean
         df["cleaned_headline"] = df["headline_text"].apply(lambda row : clean(row))
         
-        print("Padding Data...")
-        df["num_words"] = df["cleaned_headline"].apply(lambda row : len(row))
-        max_headline_len = df["num_words"].max()
-        def pad(data):
-            len_padded = max_headline_len - len(data)
-            pad = ["0"]*len_padded
-            padded_data = data + pad
-            return padded_data
-        df["padded_cleaned_headline"] = df["cleaned_headline"].apply(lambda row : pad(row))
-        
         print("Creating Word2Vec Model...")
         model = Word2Vec(sentences=df["cleaned_headline"], vector_size= 100, window = 3, min_count=1, workers=4)
         
-        print("Saving Word2Vec model and vector mappings...")
+        print("Saving Word2Vec Model and Vector Mappings...")
         model.save(word_2_vec_path)
         word_vectors = model.wv
         word_vectors.save(word_2_vec_pair_path)
         
-        print("Vectorizing Data with Word2Vec Model")
+        print("Vectorizing Data with Word2Vec Model...")
         def vectorize(data):
             vec = np.array([model.wv[word] for word in data])
             return vec
-        df["vectorized_headline"] = df["padded_cleaned_headline"].apply(lambda row : vectorize(row))
+        df["vectorized_headline"] = df["cleaned_headline"].apply(lambda row : vectorize(row))
+        
+        print("Padding Data...")
+        df["num_words"] = df["vectorized_headline"].apply(lambda row : len(row))
+        max_headline_len = df["num_words"].max()
+        def pad(data):
+            len_padded = max_headline_len - len(data)
+            pad = np.zeros((len_padded if len_padded > 0 else 1, 100), dtype=np.float32) # embedding size 100 for each word that has to be padded
+            padded_data = np.concatenate([data, pad])
+            return padded_data
+        df["padded_vectorized_headline"] = df["vectorized_headline"].apply(lambda row : pad(row))
+        
+        print("Creating Source (Padding) Masks...")
+        def create_mask(vec_headline):
+            len_padded = max_headline_len - len(vec_headline)
+            mask = np.zeros(max_headline_len, dtype=bool)
+            mask[-len_padded::] = True
+            return mask
+        df["padding_mask"] = df["vectorized_headline"].apply(lambda row: create_mask(row))
         
         print("Saving preprocessed dataframe...")
         df.to_pickle(preprocessed_path)

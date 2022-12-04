@@ -33,9 +33,9 @@ def read_arguments():
     parser.add_argument('-cf','--checkpoint_frequency', help=f"checkpoint frequency in epochs", required=False, default=1, type=int)
     parser.add_argument('-es','--early_stopping', help=f"the number of past epochs taken into account for early_stopping", required=False, default=300, type=int)
     parser.add_argument('-nw','--num_words', help="[Transformer-Only] Amount of words that can be passed to the transformer", required=False, default=8, type=int)
-    parser.add_argument('-nh','--num_heads', help="[Transformer-Only] Number of transformer heads", required=False, default=5, type=int)
+    parser.add_argument('-nh','--num_heads', help="[Transformer-Only] Number of transformer heads", required=False, default=1, type=int)
     parser.add_argument('-el','--enc_layers', help="[Transformer-Only] Number of sub-layers in transformer encoder", required=False, default=3, type=int)
-    parser.add_argument('-df','--dim_ffnn', help="[Transformer-Only] Dimension of the feedforward networks in the transformer's encoder layers", required=False, default=0, type=int)
+    parser.add_argument('-df','--dim_ffnn', help="[Transformer-Only] Dimension of the feedforward networks in the transformer's encoder layers", required=False, default=2, type=int)
     parser.add_argument('-cp','--cls_pos', help="[Transformer-Only] output position to be used for decoder", required=False, default=0, type=int)
     
     args = vars(parser.parse_args())
@@ -82,8 +82,8 @@ def main():
     val_size = len(dataset) - train_size
     training_data, val_data = random_split(dataset, [train_size, val_size], generator=torch.Generator().manual_seed(42))
     
-    train_dataloader = DataLoader(training_data, batch_size=32)
-    val_dataloader = DataLoader(val_data, batch_size=32)
+    train_dataloader = DataLoader(training_data, batch_size=1)
+    val_dataloader = DataLoader(val_data, batch_size=1)
     
     # init model and trainer
     if train == "bp" and experiment_type == "reg":
@@ -128,7 +128,7 @@ def main():
             loss = loss,
             model_save_folder = model_save_dir,
             log_save_folder = log_dir,
-            input_size = args['num_words'],
+            sequence_len = dataset.max_sequence_len,
             checkpoint_frequency = checkpoint_frequency,
             epochs = epochs,
             early_stopping = early_stopping,
