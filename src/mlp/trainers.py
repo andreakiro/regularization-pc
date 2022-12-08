@@ -261,13 +261,15 @@ class PCTrainer():
                     score = self.model(X_val)
                     
                     loss = self.loss(input=score, target=y_val)
-                    tmp_loss.append(loss.detach().cpu().numpy())   
+                    tmp_loss.append(loss.detach().cpu().numpy())
+                    tmp_energy.append(energy.detach().cpu().numpy())
 
                 self.val_loss.append(np.average(tmp_loss))
+                self.val_energy.append(np.average(tmp_energy))
 
             if self.verbose:
-                print("[Epoch %d/%d] train loss: %.5f, test loss: %.5f, train energy: %.5f" \
-                    % (epoch+1, self.epochs, self.train_loss[-1], self.val_loss[-1], self.train_energy[-1]))
+                print("[Epoch %d/%d] train loss: %.5f, test loss: %.5f, train energy: %.5f, val energy: %.5f" \
+                    % (epoch+1, self.epochs, self.train_loss[-1], self.val_loss[-1], self.train_energy[-1], self.val_energy[-1]))
 
         end = time.time()
 

@@ -151,7 +151,6 @@ class PCSimpleRegressor(nn.Module):
 
     def step_x(self, η):
         new_x = Parallel(n_jobs=len(self.pc_layers[:-1]))(delayed(self.step_xi)(i, η) for i in range(len(self.pc_layers[:-1])))
-        print(new_x)
         for l, x in zip(self.pc_layers[:-1], new_x):
             l.x = x
 
