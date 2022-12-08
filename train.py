@@ -1,5 +1,6 @@
 import os, re, json, argparse, torch, random
 from torch.utils.data import random_split, DataLoader
+from torchvision import datasets, transforms
 from easydict import EasyDict as edict
 from datetime import datetime
 import numpy as np
@@ -8,6 +9,7 @@ from src.utils import create_noisy_sinus, plot
 from src.mlp.datasets import SinusDataset
 from src.mlp.trainers import BPTrainer, PCTrainer
 from src.mlp.models.regression import BPSimpleRegressor, PCSimpleRegressor
+from src.mlp.models.classification import BPSimpleClassifier, PCSimpleClassifier
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(ROOT_DIR, 'data')
@@ -76,17 +78,24 @@ def main():
         val_loader = DataLoader(val_data, batch_size=args.batch_size)
         
         if args.training == 'bp': model = BPSimpleRegressor(dropout=args.dropout)
-        elif args.training == 'bp': model = PCSimpleRegressor(dropout=args.dropout)
+        elif args.training == 'pc': model = PCSimpleRegressor(dropout=args.dropout)
+        loss = torch.nn.MSELoss()
 
     elif args.model == 'clf':
-        raise NotImplementedError("Classifier models are not implemented yet")
+        train_dataset = datasets.MNIST(DATA_DIR, train=True, download=True, transform=transforms.ToTensor())
+        val_dataset = datasets.MNIST(DATA_DIR, train=False, download=True, transform=transforms.ToTensor())
+        train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=args.batch_size, shuffle=True)
+        val_loader = torch.utils.data.DataLoader(dataset=val_dataset, batch_size=args.batch_size, shuffle=True)
+        
+        if args.training == 'bp': model = BPSimpleClassifier(dropout=args.dropout)
+        elif args.training == 'pc': model = PCSimpleClassifier(dropout=args.dropout)
+        loss = torch.nn.CrossEntropyLoss()
 
     elif args.model == 'trf':
         raise NotImplementedError("Transformer models are not implemented yet")
 
     model = model.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
-    loss = torch.nn.MSELoss()
 
     # TODO Luca mentioned adam is not suitable for PC
     # we might have to change this to SGD if it performs bad on PC
@@ -121,7 +130,6 @@ def main():
             verbose    = args.verbose
         )
 
-    
     print(f"[Training is starting]")
     stats = trainer.fit(model, train_loader, val_loader, 0)
 
