@@ -5,21 +5,22 @@ import numpy as np
 import time
 import os
 
+
 class BPTrainer():
 
     def __init__(
         self,
         optimizer: torch.optim,
         loss: torch.nn.modules.loss,
-        model_save_folder: str,
-        log_save_folder: str,
-        checkpoint_frequency: int = 1,
+        model_dir: str,
+        log_dir: str,
+        cp_freq: int = 1,
         epochs: int = 50,
-        early_stopping: int = 50,
+        early_stp: int = 50,
         device: torch.device = torch.device('cpu', 0),
         verbose: int = 0,
-        val_loss = [],
-        train_loss = []
+        val_loss: list[float] = [],
+        train_loss: list[float] = []
     ):
 
         self.optimizer = optimizer
@@ -27,12 +28,13 @@ class BPTrainer():
         self.verbose = verbose
         self.epochs = epochs
         self.device = device
-        self.model_save_folder = model_save_folder
-        self.log_save_folder = log_save_folder
-        self.checkpoint_frequency = checkpoint_frequency
-        self.early_stopping = early_stopping
+        self.model_save_folder = model_dir
+        self.log_save_folder = log_dir
+        self.checkpoint_frequency = cp_freq
+        self.early_stopping = early_stp
         self.train_loss = train_loss
         self.val_loss = val_loss
+
 
     def fit(
         self,
@@ -43,7 +45,7 @@ class BPTrainer():
     ):
         self.model = model.to(self.device)
         start = time.time()
-
+        
         for epoch in range(self.epochs)[start_epoch:]:
 
             self.model.train()
@@ -66,7 +68,7 @@ class BPTrainer():
                     loss = self.loss(input=score, target=y_val)
                     tmp_loss.append(loss.detach().cpu().numpy())
                 self.val_loss.append(np.average(tmp_loss))
-                        
+            
             if self.verbose:
                 print("[Epoch %d/%d] train loss: %.5f, test loss: %.5f" % (epoch+1, self.epochs, self.train_loss[-1], self.val_loss[-1]))
             
