@@ -83,12 +83,12 @@ class PCSimpleClassifier(nn.Module):
         """
         input = input.view(-1, 28*28)
         μ_1 = torch.relu(self.dropout(self.linear_1(input)))
-        x_1 = self.pc_1(μ_1, init) if self.training else μ_1
+        x_1 = self.pc_layer1(μ_1, init) if self.training else μ_1
         μ_2 = torch.relu(self.dropout(self.linear_2(x_1)))
-        x_2 = self.pc_2(μ_2, init) if self.training else μ_2
-        μ_3 = F.log_softmax(self.linear_3(x_2), dim=1)
-        x_3 = self.pc_3(μ_3, init) if self.training else μ_3
-        return x_3
+        x_2 = self.pc_layer2(μ_2, init) if self.training else μ_2
+        μ_3 = self.linear_3(x_2)
+        x_3 = self.pc_layer3(μ_3, init) if self.training else μ_3
+        return F.log_softmax(x_3, dim=1)
 
 
     def get_energy(self):

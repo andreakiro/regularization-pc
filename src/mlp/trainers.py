@@ -159,13 +159,13 @@ class PCTrainer():
         start = time.time()
         
         for epoch in range(self.epochs):
+
             tmp_loss = []
             tmp_energy = []
-            for X_train, y_train in train_dataloader:
-                self.model.train()
 
-                if y_train.size(dim=0) > 1:
-                    raise ValueError("PC only works for batch size 1")
+            for X_train, y_train in train_dataloader:
+                
+                self.model.train()
 
                 X_train, y_train = X_train.to(self.device), y_train.to(self.device)
 
@@ -183,13 +183,14 @@ class PCTrainer():
                 
                 # convergence step
                 for _ in range(self.iterations):
+
                     self.x_optimizer.zero_grad()
 
                     # do a pc forward pass
                     self.model.forward(X_train)
 
                     energy = self.model.get_energy()
-                    energy.backward()
+                    energy.sum().backward()
                     self.x_optimizer.step()
 
                 # weight update step
@@ -210,11 +211,11 @@ class PCTrainer():
             self.model.eval()
             
             with torch.no_grad():
+
                 tmp_loss = []
                 tmp_energy = []
+
                 for X_val, y_val in val_dataloader:
-                    if y_train.size(dim=0) > 1:
-                        raise ValueError("PC only works for batch size 1")
 
                     X_val, y_val = X_val.to(self.device), y_val.to(self.device)
                     
@@ -222,16 +223,13 @@ class PCTrainer():
                     score = self.model(X_val)
                     
                     loss = self.loss(input=score, target=y_val)
-                    energy = self.model.get_energy()
                     tmp_loss.append(loss.detach().cpu().numpy())   
-                    tmp_energy.append(energy.detach().cpu().numpy())  
 
                 self.val_loss.append(np.average(tmp_loss))
-                self.val_energy.append(np.average(tmp_energy))   
 
             if self.verbose:
-                print("[Epoch %d/%d] train loss: %.5f, test loss: %.5f, train energy: %.5f, val energy: %.5f" \
-                    % (epoch+1, self.epochs, self.train_loss[-1], self.val_loss[-1], self.train_energy[-1], self.val_energy[-1]))
+                print("[Epoch %d/%d] train loss: %.5f, test loss: %.5f, train energy: %.5f" \
+                    % (epoch+1, self.epochs, self.train_loss[-1], self.val_loss[-1], self.train_energy[-1]))
 
         end = time.time()
 

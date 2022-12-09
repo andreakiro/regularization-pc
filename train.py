@@ -131,7 +131,7 @@ def main():
         )
 
     print(f"[Training is starting]")
-    stats = trainer.fit(model, train_loader, val_loader, 0)
+    stats = trainer.fit(model, train_loader, val_loader, start_epoch=0)
 
     print(f"\n[Training is complete]")
     print(f'{"Number of epochs": <21}: {args.epochs}')
@@ -156,18 +156,30 @@ def main():
 
 
     # save model run parameters
-    logfile = os.path.join(logs_dir, 'runlogs.json')
+    outfile = os.path.join(logs_dir, 'info.json')
     log = {
         "framework" : args.training,
+        "nsamples" : args.nsamples,
         "epochs" : args.epochs,
         "optimizer" : type (optimizer).__name__,
+        "batch_size" : args.batch_size,
         "loss" : loss._get_name(),
         "lr" : args.lr,
+        "dropout" : args.dropout,
+        "device" : str(device),
         "results" : stats
     }
-    with open(logfile, 'w') as f:
-        json.dump(log, f, indent=2)
 
+    if args.training == "pc":
+        log.update({
+            "energy_optimizer": type (trainer.x_optimizer).__name__,
+            "clr" : args.clr,
+            "energy_iterations" : args.iterations,
+            "init" : args.init,
+        })
+
+    with open(outfile, 'w') as f:
+        json.dump(log, f, indent=2)
 
 if __name__ == "__main__":
     main()
