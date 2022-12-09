@@ -41,8 +41,8 @@ class BPTrainer():
         self.val_loader = val_loader
         
         early_stopper = EarlyStopper(
-            patience=5, 
-            min_delta=1e-3
+            patience=self.args.patience, 
+            min_delta=self.args.min_delta
         )
 
         start = time.time()

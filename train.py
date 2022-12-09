@@ -34,6 +34,8 @@ def read_arguments():
     parser.add_argument('-l','--lr', help=f"Learning rate", required=False, default=0.001, type=float)
     parser.add_argument('-v','--verbose', help=f"Verbosity level", required=False, default=0, type=int)
     parser.add_argument('-es','--early_stopping', help=f"Number of epochs for early stopping", required=False, default=300, type=int)
+    parser.add_argument('-pa','--patience', help=f"Patience for the early stopping (num of epochs)", required=False, default=50, type=int)
+    parser.add_argument('-md','--min_delta', help=f"Min delta improvements for early stopping", required=False, default=1e-3, type=float)
 
     # PC training mode specific:
     parser.add_argument('-i','--init', help=f"PC initialization technique", choices={'zeros', 'normal', 'xavier_normal', 'forward'}, required=False, default="forward", type=str)
@@ -45,8 +47,6 @@ def read_arguments():
     parser.add_argument('-p','--plot', help=f"Plot the results after training or not", required=False, default=False, type=bool)
     parser.add_argument('-ns','--nsamples', help=f"Number of generated samples for regression", required=False, default=1000, type=int)
     parser.add_argument('-lps', '--log_bs_interval', help=f"frequency of batch granularity logging", required=False, default=100, type=int)
-    # parser.add_argument('-lg','--log', help=f"Log info and results of the model or not", required=False, default=False, type=bool)
-    # parser.add_argument('-r', '--run', help=f"Individual run name, if reused the training is resumed", required=True, type=str)
 
     return edict(vars(parser.parse_args()))
 
