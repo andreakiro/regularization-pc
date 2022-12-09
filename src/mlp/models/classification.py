@@ -81,6 +81,7 @@ class PCSimpleClassifier(nn.Module):
         Returns the activation of the output neuron, i.e. the last pc layer.
         
         """
+        input = input.view(-1, 28*28)
         μ_1 = torch.relu(self.dropout(self.linear_1(input)))
         x_1 = self.pc_1(μ_1, init) if self.training else μ_1
         μ_2 = torch.relu(self.dropout(self.linear_2(x_1)))
