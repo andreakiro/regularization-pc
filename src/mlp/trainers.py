@@ -206,7 +206,7 @@ class PCTrainer():
                 tmp_energy.append(energy.detach().cpu().numpy())
 
             self.train_loss.append(np.average(tmp_loss))
-            self.train_energy.append(np.average(tmp_loss))
+            self.train_energy.append(np.average(tmp_energy))
 
             self.model.eval()
             
