@@ -65,12 +65,12 @@ class PCSimpleRegressor(nn.Module):
         self.linear_3 = nn.Linear(1024, 1)
         self.dropout = nn.Dropout(p=dropout)
 
-        self.py_layer1 = PCLayer(size=1024)
-        self.py_layer2 = PCLayer(size=1024)
-        self.py_layer3 = PCLayer(size=1)
+        self.pc_layer1 = PCLayer(size=1024)
+        self.pc_layer2 = PCLayer(size=1024)
+        self.pc_layer3 = PCLayer(size=1)
 
         self.linear_layers = [self.linear_1, self.linear_2, self.linear_3]
-        self.pc_layers = [self.py_layer1, self.py_layer2, self.py_layer3]
+        self.pc_layers = [self.pc_layer1, self.pc_layer2, self.pc_layer3]
 
         self.f = torch.relu
         self.f_prime = lambda x: torch.stack([torch.relu(torch.sign(torch.diag(x[i,:,0]))) for i in range(x.shape[0])])
@@ -105,11 +105,11 @@ class PCSimpleRegressor(nn.Module):
         """
         self.input = input
         μ_1 = self.f(self.dropout(self.linear_1(input)))
-        x_1 = self.py_layer1(μ_1, init) if self.training else μ_1
+        x_1 = self.pc_layer1(μ_1, init) if self.training else μ_1
         μ_2 = self.f(self.dropout(self.linear_2(x_1)))
-        x_2 = self.py_layer2(μ_2, init) if self.training else μ_2
+        x_2 = self.pc_layer2(μ_2, init) if self.training else μ_2
         μ_3 = self.linear_3(x_2)
-        x_3 = self.py_layer3(μ_3, init) if self.training else μ_3
+        x_3 = self.pc_layer3(μ_3, init) if self.training else μ_3
         return x_3
 
 
