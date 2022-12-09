@@ -65,7 +65,7 @@ def main():
     # safely create directories
     os.makedirs(logs_dir, exist_ok=True)
     os.makedirs(models_dir, exist_ok=True)
-    os.makedirs(plots_dir, exist_ok=True)
+    if args.plot: os.makedirs(plots_dir, exist_ok=True)
 
 
     if args.model == 'reg':
