@@ -23,7 +23,7 @@ class BPSimpleClassifier(nn.Module):
 
 
     def forward(self, x) ->  torch.Tensor:
-        x = x.view(-1, 28*28)
+        x = x.reshape(-1, 28*28)
         x = F.relu(self.dropout(self.linear_1(x)))
         x = F.relu(self.dropout(self.linear_2(x)))
         o = F.log_softmax(self.linear_3(x), dim=1)
@@ -81,7 +81,7 @@ class PCSimpleClassifier(nn.Module):
         Returns the activation of the output neuron, i.e. the last pc layer.
         
         """
-        input = input.view(-1, 28*28)
+        input = input.reshape(-1, 28*28)
         μ_1 = torch.relu(self.dropout(self.linear_1(input)))
         x_1 = self.pc_layer1(μ_1, init) if self.training else μ_1
         μ_2 = torch.relu(self.dropout(self.linear_2(x_1)))
@@ -107,5 +107,6 @@ class PCSimpleClassifier(nn.Module):
         Sets the activation of the last pc_layer to the output.
         
         """
+        output = F.one_hot(output, num_classes=10).type(torch.FloatTensor)
         self.pc_layers[-1].x = torch.nn.Parameter(output)
         
