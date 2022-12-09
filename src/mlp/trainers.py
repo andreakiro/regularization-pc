@@ -34,6 +34,7 @@ class BPTrainer():
         self.early_stopping = early_stp
         self.train_loss = train_loss
         self.val_loss = val_loss
+        self.log_bs_interval = 100
 
 
     def fit(
@@ -50,7 +51,7 @@ class BPTrainer():
 
             self.model.train()
             tmp_loss = []
-            for X_train, y_train in train_dataloader:
+            for batch_idx, (X_train, y_train) in enumerate(train_dataloader):
                 X_train, y_train = X_train.to(self.device), y_train.to(self.device)
                 self.optimizer.zero_grad()
                 score = self.model(X_train)
@@ -58,6 +59,10 @@ class BPTrainer():
                 loss.backward()
                 self.optimizer.step()
                 tmp_loss.append(loss.detach().cpu().numpy())
+                if self.verbose and (batch_idx+1) % self.log_bs_interval == 0: # self.args.log_bs_interval
+                    print("[Epoch %d/%d] train loss: %.5f [Batch %d/%d]" 
+                    % (epoch+1, self.epochs, tmp_loss[-1], batch_idx * len(y_train), 
+                    len(train_dataloader.dataset)))
             self.train_loss.append(np.average(tmp_loss))
 
             self.model.eval()
@@ -144,6 +149,7 @@ class PCTrainer():
         self.train_energy = []
         self.val_loss = []
         self.val_energy = []
+        self.log_bs_interval = 100
     
     def fit(
         self,
@@ -163,7 +169,7 @@ class PCTrainer():
             tmp_loss = []
             tmp_energy = []
 
-            for X_train, y_train in train_dataloader:
+            for batch_idx, (X_train, y_train) in enumerate(train_dataloader):
                 
                 self.model.train()
 
@@ -205,6 +211,11 @@ class PCTrainer():
                 tmp_loss.append(loss.detach().cpu().numpy())
                 tmp_energy.append(energy.detach().cpu().numpy())
 
+                if self.verbose and (batch_idx+1) % self.log_bs_interval == 0: # self.args.log_bs_interval
+                    print("[Epoch %d/%d] train loss: %.5f train energy: %.5f [Batch %d/%d]" 
+                    % (epoch+1, self.epochs, tmp_loss[-1], np.average(tmp_energy[-1]),
+                    batch_idx * len(y_train), len(train_dataloader.dataset)))
+
             self.train_loss.append(np.average(tmp_loss))
             self.train_energy.append(np.average(tmp_energy))
 
@@ -228,8 +239,8 @@ class PCTrainer():
                 self.val_loss.append(np.average(tmp_loss))
 
             if self.verbose:
-                print("[Epoch %d/%d] train loss: %.5f, test loss: %.5f, train energy: %.5f" \
-                    % (epoch+1, self.epochs, self.train_loss[-1], self.val_loss[-1], self.train_energy[-1]))
+                print("[Epoch %d/%d] train loss: %.5f train energy: %.5f test loss: %.5f" \
+                    % (epoch+1, self.epochs, self.train_loss[-1], self.train_energy[-1], self.val_loss[-1]))
 
         end = time.time()
 
