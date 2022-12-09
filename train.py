@@ -44,6 +44,7 @@ def read_arguments():
     parser.add_argument('-cf','--checkpoint_frequency', help=f"checkpoint frequency in epochs", required=False, default=1, type=int)
     parser.add_argument('-p','--plot', help=f"Plot the results after training or not", required=False, default=False, type=bool)
     parser.add_argument('-ns','--nsamples', help=f"Number of generated samples for regression", required=False, default=1000, type=int)
+    parser.add_argument('-lps', '--log_bs_interval', help=f"frequency of batch granularity logging", required=False, default=100, type=int)
     # parser.add_argument('-lg','--log', help=f"Log info and results of the model or not", required=False, default=False, type=bool)
     # parser.add_argument('-r', '--run', help=f"Individual run name, if reused the training is resumed", required=True, type=str)
 
@@ -98,41 +99,38 @@ def main():
     model = model.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 
+    args.update({
+        'models_dir': models_dir,
+        'logs_dir': logs_dir,
+    })
+
     # TODO Luca mentioned adam is not suitable for PC
     # we might have to change this to SGD if it performs bad on PC
     # TODO: add reload from checkpoint (not necessary)
     
     if args.training == 'bp':
         trainer = BPTrainer(
-            # essentials
-            device    = device,
+            args      = args,
             epochs    = args.epochs,
             optimizer = optimizer,
             loss      = loss,
-            early_stp = args.early_stopping,
-            # io related
-            verbose   = args.verbose,
-            cp_freq   = args.checkpoint_frequency,
-            model_dir = models_dir,
-            log_dir   = logs_dir, 
+            device    = device
         )
 
     elif args.training == 'pc':
         trainer = PCTrainer(
-            # essentials
-            device     = device,
-            epochs     = args.epochs,
-            optimizer  = optimizer, 
-            loss       = loss,
+            args      = args,
+            epochs    = args.epochs,
+            optimizer = optimizer,
+            loss      = loss,
+            device    = device,
             init       = args.init,
             iterations = args.iterations,
             clr        = args.clr,
-            # io related
-            verbose    = args.verbose
         )
 
     print(f"[Training is starting]")
-    stats = trainer.fit(model, train_loader, val_loader, start_epoch=0)
+    stats = trainer.fit(model, train_loader, val_loader)
 
     print(f"\n[Training is complete]")
     print(f'{"Number of epochs": <21}: {args.epochs}')
