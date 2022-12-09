@@ -168,8 +168,32 @@ class PCTrainer():
         model: nn.Module,
         train_loader: torch.utils.data.DataLoader,
         val_loader: torch.utils.data.DataLoader,
+        method: str = "torch"
     ) -> edict:
+        """
+        Fit the model.
 
+        Parameters
+        ----------
+        model : nn.Module
+                model to optimize
+
+        train_dataloader : torch.utils.data.DataLoader
+                           dataloader for training data
+        
+        val_dataloader : torch.utils.data.DataLoader
+                         dataloader for validation data
+        
+        method : str 
+                 method used to optimize the model; possible parameters are "torch", if the optimization is carried out 
+                 using standard torch optimizers, or "custom", if the optimization has to be perfomed used the custom
+                 backward() and step() methods implemented for the PC models; default is "torch"
+
+        Returns
+        -------
+        Returns a dictionary containing the statistics on training and evaluation of the model.
+
+        """
         self.model = model.to(self.device)
         self.w_optimizer = self.optimizer 
         # note that this optimizer only knows about linear parameters 
@@ -207,17 +231,30 @@ class PCTrainer():
                 # convergence step
                 for _ in range(self.iterations):
 
-                    self.x_optimizer.zero_grad()
+                    if method == "torch":
+                        
+                        self.x_optimizer.zero_grad()
 
-                    # do a pc forward pass
-                    self.model.forward(X_train)
+                        # do a pc forward pass
+                        self.model.forward(X_train)
 
-                    energy = self.model.get_energy()
-                    energy.sum().backward()
-                    self.x_optimizer.step()
+                        energy = self.model.get_energy()
+                        energy.sum().backward()
+                        self.x_optimizer.step()
+                    
+                    elif method == "custom":
+                            
+                        # do a pc forward pass
+                        self.model.forward(X_train)
+                        self.model.backward_x()
+                        self.model.step_x(η=0.2)
 
                 # weight update step
-                self.w_optimizer.step()
+                if method == "torch":
+                    self.w_optimizer.step()
+                elif method == "custom":
+                    self.model.backward_w()
+                    self.model.step_w(η=0.2)   
 
                 # do a regular forward pass for evaluation
                 self.model.eval()
@@ -252,14 +289,16 @@ class PCTrainer():
                     score = self.model(X_val)
                     
                     loss = self.loss(input=score, target=y_val)
-                    tmp_loss.append(loss.detach().cpu().numpy())   
+                    tmp_loss.append(loss.detach().cpu().numpy())
+                    tmp_energy.append(energy.detach().cpu().numpy())
 
                 self.val_loss.append(np.average(tmp_loss))
-
+                self.val_energy.append(np.average(tmp_energy))
+                
             # log epoch summary
             if self.args.verbose:
-                print("[Epoch %d/%d] train loss: %.5f train energy: %.5f test loss: %.5f" \
-                    % (epoch+1, self.epochs, self.train_loss[-1], self.train_energy[-1], self.val_loss[-1]))
+                print("[Epoch %d/%d] train loss: %.5f train energy: %.5f test loss: %.5f test energy: %.5f" \
+                    % (epoch+1, self.epochs, self.train_loss[-1], self.train_energy[-1], self.val_loss[-1], self.val_energy[-1))
 
             # save model to disk
             if (epoch % self.args.checkpoint_frequency == 0) or (epoch == self.epochs - 1):
