@@ -88,7 +88,7 @@ class PCSimpleClassifier(nn.Module):
         x_2 = self.pc_layer2(μ_2, init) if self.training else μ_2
         μ_3 = self.linear_3(x_2)
         x_3 = self.pc_layer3(μ_3, init) if self.training else μ_3
-        return x_3
+        return F.log_softmax(x_3, dim=1)
 
 
     def get_energy(self):
