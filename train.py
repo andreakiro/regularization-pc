@@ -33,7 +33,7 @@ def read_arguments():
     parser.add_argument('-dp','--dropout', help=f"Dropout level", required=False, default=0, type=float)
     parser.add_argument('-l','--lr', help=f"Learning rate", required=False, default=0.001, type=float)
     parser.add_argument('-v','--verbose', help=f"Verbosity level", required=False, default=0, type=int)
-    parser.add_argument('-es','--early_stopping', help=f"the number of past epochs taken into account for early_stopping", required=False, default=300, type=int)
+    parser.add_argument('-es','--early_stopping', help=f"Number of epochs for early stopping", required=False, default=300, type=int)
 
     # PC training mode specific:
     parser.add_argument('-i','--init', help=f"PC initialization technique", choices={'zeros', 'normal', 'xavier_normal', 'forward'}, required=False, default="forward", type=str)
@@ -41,10 +41,10 @@ def read_arguments():
     parser.add_argument('-it','--iterations', help=f"PC convergence iterations", required=False, default=100, type=int)
 
     # io, logging and others:
-    parser.add_argument('-lg','--log', help=f"Log info and results of the model or not", required=False, default=False, type=bool)
     parser.add_argument('-cf','--checkpoint_frequency', help=f"checkpoint frequency in epochs", required=False, default=1, type=int)
     parser.add_argument('-p','--plot', help=f"Plot the results after training or not", required=False, default=False, type=bool)
     parser.add_argument('-ns','--nsamples', help=f"Number of generated samples for regression", required=False, default=1000, type=int)
+    # parser.add_argument('-lg','--log', help=f"Log info and results of the model or not", required=False, default=False, type=bool)
     # parser.add_argument('-r', '--run', help=f"Individual run name, if reused the training is resumed", required=True, type=str)
 
     return edict(vars(parser.parse_args()))
@@ -65,6 +65,7 @@ def main():
     # safely create directories
     os.makedirs(logs_dir, exist_ok=True)
     os.makedirs(models_dir, exist_ok=True)
+    os.makedirs(plots_dir, exist_ok=True)
 
 
     if args.model == 'reg':
@@ -142,7 +143,6 @@ def main():
 
 
     if args.plot and args.model == 'reg':
-        os.makedirs(plots_dir, exist_ok=True)
 
         X, y = [], []
         for batch, _ in val_loader:
@@ -151,8 +151,8 @@ def main():
         X, y = np.concatenate(X).ravel(), np.concatenate(y).ravel()
         # TODO 5 previous lines should be a defined function
 
-        outfile = os.path.join(os.path.dirname(plots_dir), dt_string + '.png')
-        plot(X, y, sinus_dataset.gt, outfile=outfile if log else None)
+        outfile = os.path.join(plots_dir, dt_string + '.png')
+        plot(X, y, sinus_dataset.gt, outfile=outfile)
 
 
     # save model run parameters
