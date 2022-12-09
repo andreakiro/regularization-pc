@@ -140,12 +140,15 @@ class PCSimpleRegressor(nn.Module):
     def backward_w(self):
         self.grad_w = Parallel(n_jobs=len(self.linear_layers))(delayed(self.grad_wi)(i) for i in range(len(self.pc_layers)))
 
-
     def step_x(self, η):
-        Parallel(n_jobs=len(self.pc_layers[:-1]))(delayed(self.step_xi)(i, η) for i in range(len(self.pc_layers[:-1])))
+        new_x = Parallel(n_jobs=len(self.pc_layers[:-1]))(delayed(self.step_xi)(i, η) for i in range(len(self.pc_layers[:-1])))
+        for l, x in zip(self.pc_layers[:-1], new_x):
+            l.x = x
 
     def step_w(self, η):
-        Parallel(n_jobs=len(self.linear_layers))(delayed(self.step_wi)(i, η) for i in range(len(self.linear_layers)))
+        new_w = Parallel(n_jobs=len(self.linear_layers))(delayed(self.step_wi)(i, η) for i in range(len(self.linear_layers)))
+        for l, w in zip(self.linear_layers, new_w):
+            l.weight.data = w
 
     def grad_xi(self, i):
         with torch.no_grad():
@@ -161,14 +164,15 @@ class PCSimpleRegressor(nn.Module):
             w_i = self.linear_layers[i].weight.detach()[None, :, :].expand(e_i.shape[0], -1, -1)
             x_i = self.pc_layers[i-1].x.detach()[:, :, None] if i > 0 else self.input.detach()[:, :, None]
             grad = self.f_prime(w_i @ x_i) @ e_i @ torch.transpose(x_i, 1, 2)
-            print(grad)
             return grad 
 
     def step_xi(self, i, η):
-        self.pc_layers[i].x = torch.nn.Parameter(self.pc_layers[i].x - torch.matmul(self.grad_x[i], torch.Tensor([η])))
+        with torch.no_grad():
+            return torch.nn.Parameter(self.pc_layers[i].x - torch.matmul(self.grad_x[i], torch.Tensor([η])))
 
     def step_wi(self, i, η):
-        self.linear_layers[i].weight.data = self.linear_layers[i].weight.data - torch.mul(torch.sum(self.grad_w[i], dim=0), η)
+        with torch.no_grad():
+            return torch.nn.Parameter(self.linear_layers[i].weight - torch.mul(torch.sum(self.grad_w[i], dim=0), η))
 
 
     # to use these gradients, add the following code to the trainer
