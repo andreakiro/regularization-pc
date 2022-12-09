@@ -298,7 +298,7 @@ class PCTrainer():
             # log epoch summary
             if self.args.verbose:
                 print("[Epoch %d/%d] train loss: %.5f train energy: %.5f test loss: %.5f test energy: %.5f" \
-                    % (epoch+1, self.epochs, self.train_loss[-1], self.train_energy[-1], self.val_loss[-1], self.val_energy[-1))
+                    % (epoch+1, self.epochs, self.train_loss[-1], self.train_energy[-1], self.val_loss[-1], self.val_energy[-1]))
 
             # save model to disk
             if (epoch % self.args.checkpoint_frequency == 0) or (epoch == self.epochs - 1):
