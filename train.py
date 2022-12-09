@@ -162,10 +162,18 @@ def main():
         outfile = os.path.join(log_dir, dt_string+'.json')
         log = {
             "framework" : train,
+            "nsamples" : args['num'],
             "epochs" : epochs,
             "optimizer" : type (optimizer).__name__,
+            "energy_optimizer": type (trainer.x_optimizer).__name__,
+            "batch_size" : batch_size,
             "loss" : loss._get_name(),
             "lr" : lr,
+            "clr" : clr,
+            "energy_iterations" : iterations,
+            "init" : init,
+            "dropout" : dropout,
+            "device" : device,
             "results" : stats
         }
         with open(outfile, 'w') as f:

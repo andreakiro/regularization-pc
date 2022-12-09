@@ -148,22 +148,49 @@ class PCTrainer():
         model: nn.Module,
         train_dataloader: torch.utils.data.DataLoader,
         val_dataloader: torch.utils.data.DataLoader,
-        start_epoch = 0
+        start_epoch = 0,
+        method: str = "torch"
     ) -> dict:
+        """
+        Fit the model.
 
+        Parameters
+        ----------
+        model : nn.Module
+                model to optimize
+
+        train_dataloader : torch.utils.data.DataLoader
+                           dataloader for training data
+        
+        val_dataloader : torch.utils.data.DataLoader
+                         dataloader for validation data
+
+        start_epoch : int
+                      TODO
+        
+        method : str 
+                 method used to optimize the model; possible parameters are "torch", if the optimization is carried out 
+                 using standard torch optimizers, or "custom", if the optimization has to be perfomed used the custom
+                 backward() and step() methods implemented for the PC models; default is "torch"
+
+        Returns
+        -------
+        Returns a dictionary containing the statistics on training and evaluation of the model.
+
+        """
         self.model = model.to(self.device)
         self.w_optimizer = self.optimizer # note that this optimizer only knows about linear parameters because pc parameters have not been initialized yet.
         
         start = time.time()
         
         for epoch in range(self.epochs):
+
             tmp_loss = []
             tmp_energy = []
-            for X_train, y_train in train_dataloader:
-                self.model.train()
 
-                if y_train.size(dim=0) > 1:
-                    raise ValueError("PC only works for batch size 1")
+            for X_train, y_train in train_dataloader:
+                
+                self.model.train()
 
                 X_train, y_train = X_train.to(self.device), y_train.to(self.device)
 
@@ -181,17 +208,31 @@ class PCTrainer():
                 
                 # convergence step
                 for _ in range(self.iterations):
-                    self.x_optimizer.zero_grad()
 
-                    # do a pc forward pass
-                    self.model.forward(X_train)
+                    if method == "torch":
+                        
+                        self.x_optimizer.zero_grad()
 
-                    energy = self.model.get_energy()
-                    energy.backward()
-                    self.x_optimizer.step()
+                        # do a pc forward pass
+                        self.model.forward(X_train)
+
+                        energy = self.model.get_energy()
+                        energy.sum().backward()
+                        self.x_optimizer.step()
+                    
+                    elif method == "custom":
+                            
+                        # do a pc forward pass
+                        self.model.forward(X_train)
+                        self.model.backward_x()
+                        self.model.step_x(η=0.2)
 
                 # weight update step
-                self.w_optimizer.step()
+                if method == "torch":
+                    self.w_optimizer.step()
+                elif method == "custom":
+                    self.model.backward_w()
+                    self.model.step_w(η=0.2)   
 
                 # do a regular forward pass for evaluation
                 self.model.eval()
@@ -208,11 +249,11 @@ class PCTrainer():
             self.model.eval()
             
             with torch.no_grad():
+
                 tmp_loss = []
                 tmp_energy = []
+
                 for X_val, y_val in val_dataloader:
-                    if y_train.size(dim=0) > 1:
-                        raise ValueError("PC only works for batch size 1")
 
                     X_val, y_val = X_val.to(self.device), y_val.to(self.device)
                     
@@ -220,12 +261,11 @@ class PCTrainer():
                     score = self.model(X_val)
                     
                     loss = self.loss(input=score, target=y_val)
-                    energy = self.model.get_energy()
-                    tmp_loss.append(loss.detach().cpu().numpy())   
-                    tmp_energy.append(energy.detach().cpu().numpy())  
+                    tmp_loss.append(loss.detach().cpu().numpy())
+                    tmp_energy.append(energy.detach().cpu().numpy())
 
                 self.val_loss.append(np.average(tmp_loss))
-                self.val_energy.append(np.average(tmp_energy))   
+                self.val_energy.append(np.average(tmp_energy))
 
             if self.verbose:
                 print("[Epoch %d/%d] train loss: %.5f, test loss: %.5f, train energy: %.5f, val energy: %.5f" \
