@@ -139,4 +139,4 @@ class BPTransformerTrainer():
     @staticmethod
     def generate_square_subsequent_mask(max_input_len):
         """Generates an upper-triangular matrix of -inf, with zeros on diag."""
-        return torch.triu(torch.ones(max_input_len, max_input_len) * float('-inf'), diagonal=1)
+        return torch.triu(torch.ones(max_input_len, max_input_len) * float('-inf'), diagonal=0)
