@@ -1,4 +1,4 @@
 torch
 requests
 torchtext
-gensim
+gensim==4.2.0
