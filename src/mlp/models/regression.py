@@ -1,6 +1,6 @@
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torch
 from joblib import Parallel, delayed
 
 from src.layers import PCLayer
@@ -25,13 +25,13 @@ class BPSimpleRegressor(nn.Module):
         self.dropout = nn.Dropout(p=dropout)
     
 
-    def forward(self, input) ->  torch.Tensor:
+    def forward(self, x) ->  torch.Tensor:
         """
         Computes a forward pass through the network.
 
         Parameters
         ----------
-        input: torch.Tensor
+        x: torch.Tensor
                 the input data on which to compute the output.
         
         Returns
@@ -39,14 +39,10 @@ class BPSimpleRegressor(nn.Module):
         Returns the output of the network as computed by forward propagation.
         
         """
-        out_1 = self.linear_1(input)
-        out_1 = self.dropout(out_1)
-        out_1 = F.relu(out_1)
-        out_2 = self.linear_2(out_1)
-        out_2 = self.dropout(out_2)
-        out_2 = F.relu(out_2)
-        out_3 = self.linear_3(out_2)
-        return out_3
+        x = F.relu(self.dropout(self.linear_1(x)))
+        x = F.relu(self.dropout(self.linear_2(x)))
+        o = self.linear_3(x)
+        return o
 
 
 class PCSimpleRegressor(nn.Module):
@@ -65,20 +61,19 @@ class PCSimpleRegressor(nn.Module):
         
         super(PCSimpleRegressor, self).__init__()
         self.linear_1 = nn.Linear(1, 1024)
-        self.pc_1 = PCLayer(size=1024)
         self.linear_2 = nn.Linear(1024, 1024)
-        self.pc_2 = PCLayer(size=1024)
         self.linear_3 = nn.Linear(1024, 1)
-        self.pc_3 = PCLayer(size=1)
+        self.dropout = nn.Dropout(p=dropout)
+
+        self.pc_layer1 = PCLayer(size=1024)
+        self.pc_layer2 = PCLayer(size=1024)
+        self.pc_layer3 = PCLayer(size=1)
+
+        self.linear_layers = [self.linear_1, self.linear_2, self.linear_3]
+        self.pc_layers = [self.pc_layer1, self.pc_layer2, self.pc_layer3]
 
         self.f = torch.relu
         self.f_prime = lambda x: torch.stack([torch.relu(torch.sign(torch.diag(x[i,:,0]))) for i in range(x.shape[0])])
-        
-        self.linear_layers = [self.linear_1, self.linear_2, self.linear_3]
-        self.pc_layers = [self.pc_1, self.pc_2, self.pc_3]
-
-        self.dropout = nn.Dropout(p=dropout)
-        
 
 
     def forward(self, input, init=None) -> torch.Tensor:
@@ -109,16 +104,12 @@ class PCSimpleRegressor(nn.Module):
         
         """
         self.input = input
-        μ_1 = self.linear_1(input)
-        μ_1 = self.dropout(μ_1)
-        μ_1 = self.f(μ_1)
-        x_1 = self.pc_1(μ_1, init) if self.training else μ_1
-        μ_2 = self.linear_2(x_1)
-        μ_2 = self.dropout(μ_2)
-        μ_2 = self.f(μ_2)
-        x_2 = self.pc_2(μ_2, init) if self.training else μ_2
+        μ_1 = self.f(self.dropout(self.linear_1(input)))
+        x_1 = self.pc_layer1(μ_1, init) if self.training else μ_1
+        μ_2 = self.f(self.dropout(self.linear_2(x_1)))
+        x_2 = self.pc_layer2(μ_2, init) if self.training else μ_2
         μ_3 = self.linear_3(x_2)
-        x_3 = self.pc_3(μ_3, init) if self.training else μ_3
+        x_3 = self.pc_layer3(μ_3, init) if self.training else μ_3
         return x_3
 
 

@@ -4,9 +4,9 @@ import os
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-def create_noisy_sinus(num_samples):
-    folder_path = create_data_folder()
-    data_path = os.path.join(folder_path, "noisy_sinus.npy")
+def create_noisy_sinus(outdir, num_samples):
+    os.makedirs(os.path.join(outdir, 'regression'), exist_ok=True)
+    data_path = os.path.join(outdir, 'regression', 'noisy_sinus.npy')
     
     inputs = np.linspace(0.0, 4.0, num_samples, dtype=np.float32)
     ground_truth = np.sin(1.0+inputs*inputs)

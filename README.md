@@ -8,5 +8,11 @@
 
 We implement three models once with BP and once with PC (click for details)
 - Basic [regression model](doc/regression.md) to be trained on a noisy sinus time series
-- Basic classification model to be trained on the classic MNIST dataset
+- Basic [classification model](doc/classification.md) to be trained on the classic MNIST dataset
 - Simple Transformer architecture to be trained on a small language dataset
+
+## Basic usage of the core file
+
+```python
+python3 train.py --model ${reg, clf, trf} --training ${bp, pc} 
+```
