@@ -137,8 +137,8 @@ class PCSoftmaxLayer(PCLayer):
 
         """
         if init is not None: self.init(init=init, μ=μ)
-        x = torch.softmax(self.x, dim=1)
-        μ = torch.softmax(μ, dim=1)
+        x = torch.softmax(x, dim=-1)
+        μ = torch.softmax(μ, dim=-1)
 
         self.ε = torch.sum(torch.square(x - μ), dim=1)
         return x

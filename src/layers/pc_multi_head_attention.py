@@ -350,10 +350,9 @@ class PCMultiheadAttention(MultiheadAttention):
         attn = torch.bmm(q, k.transpose(-2, -1))
         if attn_mask is not None:
             attn += attn_mask
-        attn = softmax(attn, dim=-1)
+        attn = self.pc_softmax_layer(attn)
         if dropout_p > 0.0:
             attn = dropout(attn, p=dropout_p)
-        attn = self.pc_softmax_layer(attn)
         # (B, Nt, Ns) x (B, Ns, E) -> (B, Nt, E)
         output = torch.bmm(attn, v)
         output = self.pc_attention_layer(output)
