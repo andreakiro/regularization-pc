@@ -57,14 +57,23 @@ class BPTransformerTrainer():
         self.model = model.to(self.device)
         start = time.time()
         input_len = model.max_input_len
-        source_mask = self.generate_square_subsequent_mask(input_len)
+        source_mask = self.generate_square_subsequent_mask(input_len) #TODO: creates nan after EncoderLayer
+        # source_mask = None
 
         for epoch in range(self.epochs)[start_epoch:]:
             model.train()
             tmp_loss = []
             for idx, (X_train, X_padding_mask) in enumerate(train_dataloader): # X_train is of shape (batch_size, sequence_len, embedding_size), in other words (batch_size, num_words, vectorized_word_size)
-                for start_idx in range(0, self.sequence_len-input_len-1): # iterate through the sequence until there is no word left
+                if idx >10:
+                    break
+                if not torch.sum(X_train, dim=(1,2)).all().item():
+                    print("BBBBBBBBBREAKING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                    break
+                for start_idx in range(0, self.sequence_len-input_len-1): # shift through the sequence until at least one sample has no word left
                     sub_sequence = X_train[:, start_idx:(start_idx + input_len)].to(self.device)
+                    if not torch.sum(sub_sequence, dim=(1,2)).all().item():
+                        print("BREAKING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                        break # if at least one sample doesn't have a word left, goto next sample
                     target = X_train[:, start_idx+input_len].to(self.device) # target is next word after sub-sequence
                     self.optimizer.zero_grad()
                     prediction = model(w=sub_sequence, src_mask=source_mask, padding_mask=X_padding_mask[:, start_idx:(start_idx + input_len)])
@@ -72,9 +81,6 @@ class BPTransformerTrainer():
                     loss.backward()
                     self.optimizer.step()
                     tmp_loss.append(loss.detach().cpu().numpy())
-                
-                if idx >10:
-                    break
                         
             train_loss.append(np.average(tmp_loss))
 
@@ -82,11 +88,15 @@ class BPTransformerTrainer():
             with torch.no_grad():
                 tmp_loss = []
                 for idx, (X_val, X_padding_mask) in enumerate(val_dataloader):
-                    prediction = model(X_val[:, 0:input_len], padding_mask = X_padding_mask[:, 0:input_len])
-                    loss = self.loss(input=prediction, target=X_val[:, input_len])
-                    tmp_loss.append(loss.detach().cpu().numpy())
                     if idx > 10:
                         break
+                    sample = X_val[:, 0:input_len]
+                    if not torch.sum(sample, dim=(1,2)).all():
+                        continue # if at least one sample doesn't have a word left, goto next sample
+                    padding_mask = X_padding_mask[:, 0:input_len]
+                    prediction = model(sample, padding_mask = padding_mask)
+                    loss = self.loss(input=prediction, target=X_val[:, input_len])
+                    tmp_loss.append(loss.detach().cpu().numpy())
                 val_loss.append(np.average(tmp_loss))
                 
             if self.verbose:
@@ -130,7 +140,10 @@ class BPTransformerTrainer():
         with torch.no_grad():
             tmp_loss = []
             for X_val, X_padding_mask in val_dataloader:
-                prediction = model(X_val[:, 0:input_len], padding_mask = X_padding_mask[:, 0:input_len])
+                X = X_val[:, 0:input_len]
+                if not torch.sum(X, dim=(1,2)).all():
+                    break # if at least one sample doesn't have a word left, goto next sample
+                prediction = model(X, padding_mask = X_padding_mask[:, 0:input_len])
                 loss = self.loss(input=prediction, target=X_val[:, input_len])
                 tmp_loss.append(loss.detach().cpu().numpy())
             val_loss.append(np.average(tmp_loss))
@@ -139,4 +152,4 @@ class BPTransformerTrainer():
     @staticmethod
     def generate_square_subsequent_mask(max_input_len):
         """Generates an upper-triangular matrix of -inf, with zeros on diag."""
-        return torch.triu(torch.ones(max_input_len, max_input_len) * float('-inf'), diagonal=0)
+        return torch.triu(torch.ones(max_input_len, max_input_len) * float(-1e10), diagonal=1)

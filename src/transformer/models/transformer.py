@@ -50,13 +50,20 @@ class BPTransformer(torch.nn.Module):
             single output from the output layer at specified position.
         """
         # concatenate word embeddings and positional embeddings
+        """print("padding_mask: ", padding_mask)
+        print("src_mask: ", src_mask)
+        print("input: ", w)"""
         x = w + self.pos_encoder(w)
+        #print("pos_encod: ", x)
         # encoder transformation
+        #print("Is training? ", self.training)
         if self.training:
             y = self.encoder(x, mask=src_mask, src_key_padding_mask=padding_mask)
+            # print("y: ", y)
         else:
             y = self.encoder(x, src_key_padding_mask=padding_mask)
         z = self.decoder(y.flatten(start_dim=1)) # flatten everything after batch_dim
+        # print("ouput: ", z)
         return z
 
 class PositionalEncoding(nn.Module):

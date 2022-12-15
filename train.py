@@ -7,7 +7,7 @@ import os
 import re
 import numpy as np
 
-from src.utils import create_noisy_sinus, plot, create_model_save_folder, create_headline_data
+from src.utils import create_noisy_sinus, plot, create_model_save_folder, create_headline_data, CE_loss
 from src.mlp.datasets import SinusDataset
 from src.transformer.datasets import HeadlineDataset
 from src.mlp.trainers import BPTrainer
@@ -122,7 +122,7 @@ def main():
             cls_pos = 0
         )
         optimizer = torch.optim.Adam(model.parameters(), lr=lr) 
-        loss = torch.nn.MSELoss(reduction="sum")# TODO
+        loss = CE_loss
         trainer = BPTransformerTrainer(
             optimizer = optimizer,
             loss = loss,

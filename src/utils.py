@@ -4,6 +4,7 @@ import pandas as pd
 import os
 import re
 import requests
+import torch
 from torchtext.data.utils import get_tokenizer
 from gensim.models import Word2Vec
 
@@ -114,3 +115,25 @@ def create_headline_data():
         df.to_pickle(preprocessed_path)
         print("... Done")
         
+
+def CE_loss(input: torch.Tensor, target: torch.Tensor):
+    """
+    Calculates the cross entropy of embedded words
+    input [torch.Tensor]: The embeddings for unnormalized predicted word [batch_size, embedding_size].
+    target [torch.Tensor]: The embeddings for unnormalized groundtruth words [batch_size, embedding_size].
+    """
+    batch_size = input.shape[0]
+    print("prediction: ", input)
+    print("target: ", target)
+    product = torch.sum(torch.multiply(input, target), axis=1)
+    print("product: ", product)
+    product = torch.where(condition=torch.isnan(product), input=torch.zeros_like(product), other=product)
+    print("not nan: ", product)
+    product = torch.reshape(product, [batch_size, 1]).to(torch.float64)
+
+    A = torch.log(torch.exp(product))
+    print("A ", A[0])
+    B = torch.reshape(torch.log(torch.sum(torch.exp(torch.matmul(input, torch.transpose(target, dim0=0, dim1=1))), axis=1)), [batch_size, 1])
+    print("B ", B[0])
+    print("loss: ", torch.sum(torch.subtract(B,A)))
+    return torch.sum(torch.subtract(B,A))
