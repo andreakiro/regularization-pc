@@ -1,10 +1,13 @@
-from easydict import EasyDict as edict
 import itertools
 import numpy as np
 import torch.nn as nn
 import torch
+import wandb
 import time
 import os
+
+from easydict import EasyDict as edict
+from src.optimizer import set_optimizer
 
 
 class BPTrainer():
@@ -45,6 +48,14 @@ class BPTrainer():
             min_delta=self.args.min_delta
         )
 
+        if self.args.optimizer == 'momentum':
+            self.scheduler = torch.optim.lr_scheduler.MultiStepLR(
+                optimizer=self.optimizer, 
+                milestones=[24, 36, 48, 66, 72],
+                gamma=self.args.gamma
+            )
+
+        wandb.watch(self.model)
         start = time.time()
 
         for epoch in range(self.epochs):
@@ -64,11 +75,19 @@ class BPTrainer():
 
                 tmp_loss.append(loss.detach().cpu().numpy())
 
+                if np.isnan(tmp_loss[-1]):
+                    print('[Abort program] Loss was nan at some point')
+                    wandb.finish() 
+                    exit(1)
+
                 if self.args.verbose and (batch_idx+1) % self.args.log_bs_interval == 0:
                     print("[Epoch %d/%d] train loss: %.5f [batch %d/%d]" 
                     % (epoch+1, self.epochs, tmp_loss[-1], batch_idx * len(y_train), len(self.train_loader.dataset)))
 
             self.train_loss.append(np.average(tmp_loss))
+
+            if self.args.optimizer == 'momentum':
+                self.scheduler.step()
 
             # in: eval loop
             self.model.eval()
@@ -81,6 +100,10 @@ class BPTrainer():
                     tmp_loss.append(loss.detach().cpu().numpy())
 
                 self.val_loss.append(np.average(tmp_loss))
+
+            # watch metrics in wandb
+            wandb.log({'train_loss': self.train_loss[-1], 'epoch': epoch})
+            wandb.log({'test_loss': self.val_loss[-1], 'epoch': epoch})
 
             # log epoch summary
             if self.args.verbose:
@@ -100,7 +123,9 @@ class BPTrainer():
             if early_stopper.verify(self.val_loss[-1]):
                 print(f'[Early stop] val loss did not improve of more than \
                 {early_stopper.min_delta} for last {early_stopper.patience} epochs')
+                wandb.finish()
                 break
+
         
         end = time.time()
         
@@ -112,6 +137,8 @@ class BPTrainer():
         stats["best_train_loss"] = float(min(self.train_loss))
         stats["best_epoch"] = int(np.argmin(self.val_loss))+1
         stats['time'] = end - start
+
+        wandb.finish()
 
         return stats
 
@@ -154,8 +181,6 @@ class PCTrainer():
 
         self.train_loss = []
         self.val_loss = []
-
-        self.train_loss = []
         self.train_energy = []
 
         self.init = init
@@ -195,13 +220,21 @@ class PCTrainer():
 
         """
         self.model = model.to(self.device)
-        self.w_optimizer = self.optimizer 
-        # note that this optimizer only knows about linear parameters 
-        # because pc parameters have not been initialized yet
-
         self.train_loader = train_loader
         self.val_loader = val_loader
 
+        # note that this optimizer only knows about linear parameters 
+        # because pc parameters have not been initialized yet
+        self.w_optimizer = self.optimizer 
+
+        if self.args.optimizer == 'momentum':
+            self.scheduler = torch.optim.lr_scheduler.MultiStepLR(
+                optimizer=self.optimizer, 
+                milestones=[24, 36, 48, 66, 72],
+                gamma=self.args.gamma
+            )
+
+        wandb.watch(self.model)
         start = time.time()
         
         for epoch in range(self.epochs):
@@ -222,7 +255,21 @@ class PCTrainer():
                 self.model.forward(X_train, self.init)
 
                 pc_parameters = [layer.parameters() for layer in self.model.pc_layers]
-                self.x_optimizer = torch.optim.SGD(itertools.chain(*pc_parameters), self.clr)
+
+                self.x_optimizer = set_optimizer(
+                    paramslist=torch.nn.ParameterList(itertools.chain(*pc_parameters)), 
+                    optimizer=self.args.x_optimizer,
+                    lr=self.args.clr,
+                    wd=self.args.pc_weight_decay,
+                    mom=self.args.pc_momentum
+                )
+
+                if self.args.x_optimizer == 'momentum':
+                    self.x_scheduler = torch.optim.lr_scheduler.MultiStepLR(
+                        optimizer=self.x_optimizer, 
+                        milestones=[24, 36, 48, 66, 72],
+                        gamma=self.args.pc_gamma
+                    )
                 
                 # fix last pc layer to output
                 self.model.fix_output(y_train)
@@ -241,6 +288,9 @@ class PCTrainer():
                         energy = self.model.get_energy()
                         energy.sum().backward()
                         self.x_optimizer.step()
+
+                        if self.args.x_optimizer == 'momentum':
+                            self.x_scheduler.step()
                     
                     elif method == "custom":
                             
@@ -265,6 +315,11 @@ class PCTrainer():
                 tmp_loss.append(loss.detach().cpu().numpy())
                 tmp_energy.append(energy.detach().cpu().numpy())
 
+                if np.isnan(tmp_loss[-1]):
+                    print('[Abort program] Loss was nan at some point')
+                    wandb.finish() 
+                    exit(1)
+
                 if self.args.verbose and (batch_idx+1) % self.args.log_bs_interval == 0: 
                     print("[Epoch %d/%d] train loss: %.5f train energy: %.5f [batch %d/%d]" 
                     % (epoch+1, self.epochs, tmp_loss[-1], np.average(tmp_energy[-1]),
@@ -273,13 +328,16 @@ class PCTrainer():
             self.train_loss.append(np.average(tmp_loss))
             self.train_energy.append(np.average(tmp_energy))
 
+            if self.args.optimizer == 'momentum':
+                self.scheduler.step()
+
+
             # in: eval loop
             self.model.eval()
             
             with torch.no_grad():
 
                 tmp_loss = []
-                tmp_energy = []
 
                 for X_val, y_val in val_loader:
 
@@ -287,18 +345,20 @@ class PCTrainer():
                     
                     # do a regular forward pass for evaluation
                     score = self.model(X_val)
-                    
                     loss = self.loss(input=score, target=y_val)
                     tmp_loss.append(loss.detach().cpu().numpy())
-                    tmp_energy.append(energy.detach().cpu().numpy())
 
                 self.val_loss.append(np.average(tmp_loss))
-                self.val_energy.append(np.average(tmp_energy))
+
+            # watch metrics in wandb
+            wandb.log({'train_loss': self.train_loss[-1], 'epoch': epoch})
+            wandb.log({'train_energy': self.train_energy[-1], 'epoch': epoch})
+            wandb.log({'test_loss': self.val_loss[-1], 'epoch': epoch})
                 
             # log epoch summary
             if self.args.verbose:
-                print("[Epoch %d/%d] train loss: %.5f train energy: %.5f test loss: %.5f test energy: %.5f" \
-                    % (epoch+1, self.epochs, self.train_loss[-1], self.train_energy[-1], self.val_loss[-1], self.val_energy[-1]))
+                print("[Epoch %d/%d] train loss: %.5f train energy: %.5f test loss: %.5f" \
+                    % (epoch+1, self.epochs, self.train_loss[-1], self.train_energy[-1], self.val_loss[-1]))
 
             # save model to disk
             if (epoch % self.args.checkpoint_frequency == 0) or (epoch == self.epochs - 1):
@@ -321,6 +381,8 @@ class PCTrainer():
         stats["best_train_loss"] = float(min(self.train_loss))
         stats["best_epoch"] = int(np.argmin(self.val_loss))+1
         stats['time'] = end - start
+
+        wandb.finish()
 
         return stats
 

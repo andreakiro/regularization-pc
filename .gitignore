@@ -21,3 +21,9 @@ data
 
 # Idea files
 .idea
+
+# Out files
+out
+
+# WandB files
+wandb
