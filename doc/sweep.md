@@ -7,16 +7,9 @@
 ### Euler setup (skip for local runs)
 ```
 ssh nethz@euler.ethz.ch
-env2lmod && module load gcc/6.3.0 eth_proxy hdf5/1.10.1
-```
-
-### Setup dependencies
-```
-python3 -m pip install venv
-python3 -m venv .venv
-source .venv/bin/activate
-python3 -m pip install wheel
-python3 -m pip install -r ./env/requirements.txt
+git clone git@github.com:andreakiro/bio-transformers.git
+cd bio-transformers
+source setup_cluster.sh
 ```
 
 ### Create sweep and run agent
