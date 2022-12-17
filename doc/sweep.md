@@ -12,10 +12,16 @@ cd bio-transformers
 source setup_cluster.sh
 ```
 
-### Create sweep and run agent
+### Create sweep and run agent (manual)
 ```
 wandb sweep  ./wnb/${SWEEP_FILE}.yaml
 wandb agent ${SWEEP_ID} --count ${number}
+```
+
+### Create sweep and run agents (jobs)
+```
+wandb sweep ./wnb/${SWEEP_FILE}.yaml
+sbatch --array=1-${num_agents} --wrap="wandb agent ${SWEEP_ID} --count ${number}"
 ```
 
 ### Run file manually
