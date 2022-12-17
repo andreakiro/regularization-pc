@@ -56,7 +56,7 @@ def read_arguments():
 
     # io, logging and others:
     parser.add_argument('--wandb', type=str, default='offline', help='set wandb online or offline', choices={'online', 'offline'})
-    parser.add_argument('-cf','--checkpoint_frequency', help=f"checkpoint frequency in epochs", required=False, default=1, type=int)
+    parser.add_argument('-cf','--checkpoint_frequency', help=f"checkpoint frequency in epochs", required=False, default=-1, type=int)
     parser.add_argument('-p','--plot', help=f"Plot the results after training or not", required=False, default=False, type=bool)
     parser.add_argument('-ns','--nsamples', help=f"Number of generated samples for regression", required=False, default=1000, type=int)
     parser.add_argument('-lps', '--log_bs_interval', help=f"frequency of batch granularity logging", required=False, default=100, type=int)
@@ -121,6 +121,7 @@ def main():
     args = read_arguments()
     wandb_config = create_wandb_config(args)
     dt_string = datetime.now().strftime("%Y%m%d%H%M%S")
+    if args.checkpoint_frequency == -1: args.checkpoint_frequency = args.epochs + 1
 
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)

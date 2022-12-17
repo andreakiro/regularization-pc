@@ -112,8 +112,9 @@ class BPTrainer():
                 if self.args.model != 'reg': print('')
 
             # save model to disk
+            epoch = epoch + 1 # for simplicity
             if (epoch % self.args.checkpoint_frequency == 0) or (epoch == self.epochs - 1):
-                filename = f'epoch_{epoch}.pt' if epoch != self.epochs - 1 else 'model.pt'
+                filename = f'epoch_{epoch}.pt' if epoch != self.epochs - 1 else 'last_model.pt'
                 torch.save({
                     'model_state_dict': model.state_dict(),
                     'optimizer_state_dict': self.optimizer.state_dict()
@@ -361,8 +362,9 @@ class PCTrainer():
                     % (epoch+1, self.epochs, self.train_loss[-1], self.train_energy[-1], self.val_loss[-1]))
 
             # save model to disk
-            if (epoch % self.args.checkpoint_frequency == 0) or (epoch == self.epochs - 1):
-                filename = f'epoch_{epoch}.pt' if epoch != self.epochs - 1 else 'model.pt'
+            epoch = epoch + 1 # for simplicity
+            if (epoch % self.args.checkpoint_frequency == 0) or (epoch == self.epochs):
+                filename = f'epoch_{epoch}.pt' if epoch != self.epochs - 1 else 'last_model.pt'
                 torch.save({
                     'model_state_dict': model.state_dict(),
                     'w_optimizer_state_dict': self.w_optimizer.state_dict(),
