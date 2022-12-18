@@ -95,8 +95,8 @@ def augment(image):
     
     bw, x, y = image.shape
     image = np.reshape(image,(x, y, bw))
-    io.imshow(image)
-    plt.show()
+    #io.imshow(image)
+    #plt.show()
     noise = lambda x:random_noise(x)
     swirls = lambda x: swirl(x, strength = 1, radius = 5, rotation=0.05) # not too much of a swirl
     affine_trans = lambda x: aff_trans(x)
@@ -107,8 +107,8 @@ def augment(image):
         if random.choice(sampleList):
             image = func(image)
     image = resize(image, (x, y, bw))
-    io.imshow(image)
-    plt.show()
+    #io.imshow(image)
+    #plt.show()
     return np.reshape(image, (bw, x, y))
     
 def create_data_folder():
