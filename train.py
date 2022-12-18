@@ -7,13 +7,8 @@ import numpy as np
 import itertools
 import wandb
 
-from src.optimizer import set_optimizer
-from src.utils import create_noisy_sinus, plot
-
-from src.mlp.datasets import SinusDataset
-from src.mlp.trainers import BPTrainer, PCTrainer
-from src.mlp.models.regression import BPSimpleRegressor, PCSimpleRegressor
-from src.mlp.models.classification import BPSimpleClassifier, PCSimpleClassifier
+from src.utils import plot
+from src.factory import get_factory
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
@@ -29,6 +24,7 @@ def read_arguments():
     parser.add_argument('-m', '--model', help=f"Model selection for experiments", choices={'reg', 'clf'}, required=True, type=str)
     parser.add_argument('-t','--training', help=f"Training framework, either 'bp' (backprop) or 'pc' (predictive coding)", choices={'bp', 'pc'}, required=True, type=str)
     parser.add_argument('--seed', help='Random seed for experiment', required=False, default=42, type=int)
+    parser.add_argument('-d', '--dataset', help='Dataset to use: Regression [sinus, housing], Classification [MNIST, FashionMNIST]', required=False, choices={'housing', 'sinus', 'MNIST', 'FashionMNIST'}, type=str)
     
     # common to all architectures and training modes:
     parser.add_argument('-bs','--batch-size', help=f"Batch size used for training and evaluation", required=False, default=32, type=int)
@@ -132,77 +128,18 @@ def main():
     plots_dir  = os.path.join(OUT_DIR, 'plots', args.model, dt_string)
     models_dir = os.path.join(OUT_DIR, 'models', args.model, dt_string)
     
-    # safely create directories
-    os.makedirs(logs_dir, exist_ok=True)
-    os.makedirs(models_dir, exist_ok=True)
-    if args.plot: os.makedirs(plots_dir, exist_ok=True)
-
-
-    if args.model == 'reg':
-        create_noisy_sinus(outdir=DATA_DIR, num_samples=args.nsamples)
-        dpath = os.path.join(DATA_DIR, 'regression', 'noisy_sinus.npy')
-        sinus_dataset = SinusDataset(data_path=dpath, device=device)
-        train_size = int(0.8 * len(sinus_dataset))
-        val_size = len(sinus_dataset) - train_size
-        train_data, val_data = random_split(sinus_dataset, [train_size, val_size], generator=torch.Generator())
-        train_loader = DataLoader(train_data, batch_size=args.batch_size)
-        val_loader = DataLoader(val_data, batch_size=args.batch_size)
-        
-        if args.training == 'bp': model = BPSimpleRegressor(dropout=args.dropout)
-        elif args.training == 'pc': model = PCSimpleRegressor(dropout=args.dropout)
-        loss = torch.nn.MSELoss()
-
-    elif args.model == 'clf':
-        train_dataset = datasets.MNIST(DATA_DIR, train=True, download=True, transform=transforms.ToTensor())
-        val_dataset = datasets.MNIST(DATA_DIR, train=False, download=True, transform=transforms.ToTensor())
-        train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=args.batch_size, shuffle=True)
-        val_loader = torch.utils.data.DataLoader(dataset=val_dataset, batch_size=args.batch_size, shuffle=True)
-        
-        if args.training == 'bp': model = BPSimpleClassifier(dropout=args.dropout)
-        elif args.training == 'pc': model = PCSimpleClassifier(dropout=args.dropout)
-        loss = torch.nn.CrossEntropyLoss()
-
-    elif args.model == 'trf':
-        raise NotImplementedError("Transformer models are not implemented yet")
-
-    model = model.to(device)
-    optimizer = set_optimizer(
-        paramslist=torch.nn.ParameterList(model.parameters()),
-        optimizer=args.optimizer,
-        lr=args.lr,
-        wd=args.weight_decay,
-        mom=args.momentum
-    )
-
     args.update({
         'models_dir': models_dir,
         'logs_dir': logs_dir,
     })
-
-    # TODO Luca mentioned adam is not suitable for PC
-    # we might have to change this to SGD if it performs bad on PC
     
-    if args.training == 'bp':
-        trainer = BPTrainer(
-            args      = args,
-            epochs    = args.epochs,
-            optimizer = optimizer,
-            loss      = loss,
-            device    = device
-        )
-
-    elif args.training == 'pc':
-        trainer = PCTrainer(
-            args      = args,
-            epochs    = args.epochs,
-            optimizer = optimizer,
-            loss      = loss,
-            device    = device,
-            init       = args.init,
-            iterations = args.iterations,
-            clr        = args.clr,
-        )
-
+    # safely create directories
+    os.makedirs(logs_dir, exist_ok=True)
+    os.makedirs(models_dir, exist_ok=True)
+    if args.plot: os.makedirs(plots_dir, exist_ok=True)
+    
+    factory = get_factory(args, DATA_DIR, device)
+    train_loader, val_loader, model, trainer, loss = factory.train_loader, factory.val_loader, factory.model, factory.trainer, factory.loss
 
     wandb_config.update({
         'device': device.type,
@@ -231,16 +168,18 @@ def main():
 
 
     # final evaluation or plotting
-    if args.plot and args.model == 'reg':
-        X, y = [], []
-        for batch, _ in val_loader:
+    if args.plot and args.dataset == 'sinus':
+        X, y, gt = [], [], []
+        for batch, gt in val_loader:
             X.append(batch.detach().numpy())
             y.append(model(batch).detach().numpy())
-        X, y = np.concatenate(X).ravel(), np.concatenate(y).ravel()
+            gt.append(gt.detach().numpy())
+            
+        X, y, gt = np.concatenate(X).ravel(), np.concatenate(y).ravel(), np.concatenate(gt).ravel()
         # TODO 5 previous lines should be a defined function
 
         outfile = os.path.join(plots_dir, dt_string + '.png')
-        plot(X, y, sinus_dataset.gt, outfile=outfile)
+        plot(X, y, gt, outfile=outfile)
 
 
     # save model run parameters
