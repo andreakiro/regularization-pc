@@ -21,3 +21,12 @@ data
 
 # Idea files
 .idea
+
+# Out files
+out
+
+# WandB files
+wandb
+
+# venv files
+.venv
