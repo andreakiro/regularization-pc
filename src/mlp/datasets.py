@@ -1,7 +1,6 @@
 import torch
 import os
 import numpy as np
-
 class SinusDataset(torch.utils.data.Dataset):
     """
     Noisy Sinus dataset.
@@ -33,6 +32,7 @@ class SinusDataset(torch.utils.data.Dataset):
         x = self.X[idx]
         y = self.y[idx]
         return x, y
+        
 
 class HousePriceDataset(torch.utils.data.Dataset):
     """
@@ -50,10 +50,11 @@ class HousePriceDataset(torch.utils.data.Dataset):
         X = np.load(data_x_path)
         y = np.load(data_y_path)
         
-        self.X = torch.tensor(X, dtype=torch.int32).to(device)
-        self.y = torch.tensor(y, dtype=torch.int32).unsqueeze(1).to(device)
+        self.X = torch.tensor(X, dtype=torch.float32).to(device)
+        self.y = torch.tensor(y, dtype=torch.float32).unsqueeze(1).to(device)
         
         self.sample_size = self.X.shape[1]
+        
     def __len__(self):
         return len(self.X)
 

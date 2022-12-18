@@ -3,6 +3,12 @@ import numpy as np
 import pandas as pd
 import os
 import requests
+import random
+
+from skimage.util import random_noise
+from skimage.transform import warp, rescale as rsc, resize, swirl, PiecewiseAffineTransform
+from skimage import io
+
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -16,6 +22,11 @@ def create_noisy_sinus(num_samples):
     
     data = np.array([inputs, observations, ground_truth])
     np.save(data_path, data)
+
+def get_out_of_distribution_sinus(num_samples):
+    inputs = np.linspace(-1.0, 5.0, num_samples, dtype=np.float32)
+    ground_truth = np.sin(1.0+inputs*inputs)
+    return inputs, ground_truth
 
 def create_house_price():
     folder_path = create_data_folder()
@@ -60,6 +71,45 @@ def create_house_price():
         np.save(encoded_x_path, x_data)
         np.save(encoded_y_path, y_data)
         print("...Done")
+
+def augment(image):
+    """Downscaling, flipping, transformation, swirling, change in brightness and contrast
+    """
+    def aff_trans(image):
+        # code adapted from a previous project of Anne: https://github.com/An-nay-marks/3DVision_2022
+        # adapted from scikit docs
+        rows, cols = image.shape[0], image.shape[1]
+        src_cols = np.linspace(0, cols, 5)
+        src_rows = np.linspace(0, rows, 2)
+        src_rows, src_cols = np.meshgrid(src_rows, src_cols)
+        src = np.dstack([src_cols.flat, src_rows.flat])[0]
+        # add sinusoidal oscillation to row coordinates
+        dst_rows = src[:, 1] - np.sin(np.linspace(0, 3 * np.pi, src.shape[0])) * 2
+        dst_cols = src[:, 0]
+        dst_rows *= 1.5
+        dst_rows -= 1.5 * 7
+        dst = np.vstack([dst_cols, dst_rows]).T
+        aff = PiecewiseAffineTransform()
+        aff.estimate(src, dst)
+        return warp(image, aff)    
+    
+    bw, x, y = image.shape
+    image = np.reshape(image,(x, y, bw))
+    io.imshow(image)
+    plt.show()
+    noise = lambda x:random_noise(x)
+    swirls = lambda x: swirl(x, strength = 1, radius = 5, rotation=0.05) # not too much of a swirl
+    affine_trans = lambda x: aff_trans(x)
+    rescale = lambda x: rsc(x, scale=(0.8, 0.8, 1)) # don't change rgb
+    
+    sampleList = [True, False]
+    for func in [rescale, noise, swirls, affine_trans]:
+        if random.choice(sampleList):
+            image = func(image)
+    image = resize(image, (x, y, bw))
+    io.imshow(image)
+    plt.show()
+    return np.reshape(image, (bw, x, y))
     
 def create_data_folder():
     folder_path = os.path.join(ROOT_DIR, "data")
@@ -81,7 +131,7 @@ def plot(x, observations, ground_truth=None, outfile=None):
     os.environ['KMP_DUPLICATE_LIB_OK']='True'
     plt.scatter(x, observations, color="r", label="noisy observation", marker='.')
     if ground_truth is not None: 
-        plt.plot(ground_truth[0], ground_truth[1], color="blue", label="ground truth")
+        plt.plot(x, ground_truth, color="blue", label="ground truth")
     plt.xlabel('x')
     plt.ylabel('sin(x)')
     plt.title("A fairly messy sinus")

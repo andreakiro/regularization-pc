@@ -4,10 +4,8 @@ from torchvision import datasets, transforms
 from easydict import EasyDict as edict
 from datetime import datetime
 import numpy as np
-import itertools
 import wandb
 
-from src.utils import plot
 from src.factory import get_factory
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
@@ -136,7 +134,6 @@ def main():
     # safely create directories
     os.makedirs(logs_dir, exist_ok=True)
     os.makedirs(models_dir, exist_ok=True)
-    if args.plot: os.makedirs(plots_dir, exist_ok=True)
     
     factory = get_factory(args, DATA_DIR, device)
     train_loader, val_loader, model, trainer, loss = factory.train_loader, factory.val_loader, factory.model, factory.trainer, factory.loss
@@ -153,11 +150,10 @@ def main():
         resume = 'auto',
     )
 
-
     print(f"[Training is starting]")
     print(args)
 
-    stats = trainer.fit(model, train_loader, val_loader)
+    stats = trainer.fit(model, train_loader, val_loader, plots_dir)
 
     print(f"\n[Training is complete]")
     print(f'{"Number of epochs": <21}: {args.epochs}')
@@ -165,21 +161,6 @@ def main():
     print(f'{"Best train loss": <21}: {round(stats["best_train_loss"], 5)}')
     print(f'{"Best validation loss": <21}: {round(stats["best_val_loss"], 5)}')
     print(f'{"Best epoch": <21}: {stats["best_epoch"]}')
-
-
-    # final evaluation or plotting
-    if args.plot and args.dataset == 'sinus':
-        X, y, gt = [], [], []
-        for batch, gt in val_loader:
-            X.append(batch.detach().numpy())
-            y.append(model(batch).detach().numpy())
-            gt.append(gt.detach().numpy())
-            
-        X, y, gt = np.concatenate(X).ravel(), np.concatenate(y).ravel(), np.concatenate(gt).ravel()
-        # TODO 5 previous lines should be a defined function
-
-        outfile = os.path.join(plots_dir, dt_string + '.png')
-        plot(X, y, gt, outfile=outfile)
 
 
     # save model run parameters

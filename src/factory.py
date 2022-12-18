@@ -18,7 +18,7 @@ def get_factory(args, DATA_DIR, device):
         factory = RegressionFactory(args, DATA_DIR, device)
 
     elif args.model == 'clf':
-        factory = ClassificationFactory(args, DATA_DIR)
+        factory = ClassificationFactory(args, DATA_DIR, device)
 
     elif args.model == 'trf':
         raise NotImplementedError("Transformer models are not implemented yet")
@@ -101,8 +101,8 @@ class ClassificationFactory(Factory):
             val_dataset = datasets.MNIST(DATA_DIR, train=False, download=True, transform=transforms.ToTensor())
         
         elif args.dataset == "FashionMNIST":
-            train_dataset = datasets.MNIST(DATA_DIR, train=True, download=True, transform=transforms.ToTensor())
-            val_dataset = datasets.MNIST(DATA_DIR, train=False, download=True, transform=transforms.ToTensor())
+            train_dataset = datasets.FashionMNIST(DATA_DIR, train=True, download=True, transform=transforms.ToTensor())
+            val_dataset = datasets.FashionMNIST(DATA_DIR, train=False, download=True, transform=transforms.ToTensor())
         
         self.train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=args.batch_size, shuffle=True)
         self.val_loader = torch.utils.data.DataLoader(dataset=val_dataset, batch_size=args.batch_size, shuffle=True)

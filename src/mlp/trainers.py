@@ -8,6 +8,7 @@ import os
 
 from easydict import EasyDict as edict
 from src.optimizer import set_optimizer
+from src.utils import get_out_of_distribution_sinus, plot, augment
 
 
 class BPTrainer():
@@ -37,11 +38,13 @@ class BPTrainer():
         model: nn.Module,
         train_loader: torch.utils.data.DataLoader,
         val_loader: torch.utils.data.DataLoader,
+        plots_dir
     ):
 
         self.model = model.to(self.device)
         self.train_loader = train_loader
         self.val_loader = val_loader
+        self.plots_dir = plots_dir
         
         early_stopper = EarlyStopper(
             patience=self.args.patience, 
@@ -138,11 +141,55 @@ class BPTrainer():
         stats["best_train_loss"] = float(min(self.train_loss))
         stats["best_epoch"] = int(np.argmin(self.val_loss))+1
         stats['time'] = end - start
+        
+        stats = self.conclude_training(stats, val_loader)
 
         wandb.finish()
 
         return stats
-
+    
+    def conclude_training(self, stats, val_loader):
+        # final evaluation or plotting
+        self.model.eval()
+        with torch.no_grad():
+            if self.args.dataset == "sinus" or (self.args.model == "reg" and self.args.dataset is None):
+                samples_X, samples_gt = get_out_of_distribution_sinus(400)
+                samples_X = torch.tensor(samples_X, dtype=torch.float32).unsqueeze(1).to(self.device)
+                samples_gt = torch.tensor(samples_gt, dtype=torch.float32).unsqueeze(1).to(self.device)
+                X, y, gt = [], [], []
+                losses = []
+                for idx, sample_x in enumerate(samples_X):
+                    groundtruth = samples_gt[idx]
+                    prediction = self.model(sample_x.to(self.device))
+                    losses.append(self.loss(input=prediction, target=groundtruth).detach().cpu().numpy())
+                    X.append(sample_x.detach().cpu().numpy())
+                    y.append(prediction.detach().cpu().numpy())
+                    gt.append(groundtruth.detach().cpu().numpy())
+                stats['generalization_loss'] = float(np.average(losses).item())
+                
+                if self.args.plot:
+                    X, y, gt = np.concatenate(X).ravel(), np.concatenate(y).ravel(), np.concatenate(gt).ravel()
+                    outfile = os.path.join(self.plots_dir, 'noisy_sinus_plot.png')
+                    os.makedirs(self.plots_dir, exist_ok=True)
+                    plot(X, y, gt, outfile=outfile)
+            
+            elif self.args.model == "clf":
+                # warp data
+                losses = []
+                for X_val, y_val in self.val_loader:
+                    scores = []
+                    x_val = []
+                    for sample in X_val:
+                        x = augment(sample.cpu().numpy())
+                        x_val.append(torch.Tensor(x))
+                    x_vals = torch.stack(x_val)
+                    score = self.model(x_vals.to(self.device))
+                    scores.append(score)
+                    loss = self.loss(input=torch.cat(scores), target=y_val)
+                    losses.append(loss.detach().cpu().numpy())
+                stats['generalization_loss'] = float(np.average(losses).item())
+        
+        return stats
 
 
 class PCTrainer():

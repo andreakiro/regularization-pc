@@ -1,0 +1,4 @@
+torch
+requests
+torchtext
+scikit-image==0.19.3
