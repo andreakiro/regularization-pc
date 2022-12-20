@@ -27,3 +27,6 @@ out
 
 # WandB files
 wandb
+
+# venv files
+.venv
