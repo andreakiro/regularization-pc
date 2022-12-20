@@ -1,38 +1,59 @@
 from torch.utils.data import random_split, DataLoader
 from torchvision import datasets, transforms
+from easydict import EasyDict as edict
 from abc import ABC
-
-import os
 import torch
+import os
 
-from src.utils import create_noisy_sinus
-from src.optimizer import set_optimizer
-from src.utils import create_noisy_sinus, create_house_price
-from src.mlp.datasets import SinusDataset, HousePriceDataset
 from src.mlp.trainers import BPTrainer, PCTrainer
+from src.mlp.datasets import SinusDataset, HousePriceDataset
 from src.mlp.models.regression import BPSimpleRegressor, PCSimpleRegressor
 from src.mlp.models.classification import BPSimpleClassifier, PCSimpleClassifier
+from src.optimizer import set_optimizer
 
-def get_factory(args, DATA_DIR, device):
-    if args.model == 'reg':
-        factory = RegressionFactory(args, DATA_DIR, device)
 
-    elif args.model == 'clf':
-        factory = ClassificationFactory(args, DATA_DIR, device)
 
-    elif args.model == 'trf':
-        raise NotImplementedError("Transformer models are not implemented yet")
-    return factory
-   
+class TrainerFactory:
+    
+    def __init__(
+        self,
+        args : edict,
+        data_dir: str,
+        device: torch.device
+    ):
+
+        if args.model == 'reg':
+            factory = RegressionFactory(args, data_dir, device)
+        
+        elif args.model == 'clf':
+            factory = ClassificationFactory(args, data_dir, device)
+
+        self.model = factory.model
+        self.loss = factory.loss
+        self.trainer = factory.trainer
+
+        self.train_loader = factory.train_loader
+        self.val_loader = factory.val_loader
+
+
 
 class Factory(ABC):
-    def __init__(self, args, DATA_DIR, device):
+
+    def __init__(
+        self,
+        args : edict,
+        data_dir: str,
+        device: torch.device
+    ):
+
         self.args = args
-        self.DATA_DIR = DATA_DIR
-        self.loss = None
+        self.data_dir = data_dir
         self.device = device
+        self.loss = None
         
-    def get_trainer(self):
+
+    def _set_trainer(self):
+
         self.optimizer = set_optimizer(
             paramslist=torch.nn.ParameterList(self.model.parameters()),
             optimizer=self.args.optimizer,
@@ -40,8 +61,7 @@ class Factory(ABC):
             wd=self.args.weight_decay,
             mom=self.args.momentum
         )
-        # TODO Luca mentioned adam is not suitable for PC
-        # we might have to change this to SGD if it performs bad on PC
+
         if self.args.training == 'bp':
             self.trainer = BPTrainer(
                 args      = self.args,
@@ -63,18 +83,29 @@ class Factory(ABC):
                 clr        = self.args.clr,
             )
 
+        return self
+
+
 class RegressionFactory(Factory):
-    def __init__(self, args, DATA_DIR, device):
-        super().__init__(args, DATA_DIR, device)
-        if not args.dataset or args.dataset=="sinus": # use standard (noisy sinus)
-            create_noisy_sinus(num_samples=args.nsamples)
-            dpath = os.path.join(DATA_DIR, 'regression', 'noisy_sinus.npy')
-            self.dataset = SinusDataset(data_path=dpath, device=device)
+
+    def __init__(
+        self,
+        args : edict,
+        data_dir: str,
+        device: torch.device
+    ):
+
+        super().__init__(args, data_dir, device)
+
+        if args.dataset == 'sine':
+            dpath = os.path.join(data_dir, 'regression', 'sine')
+            dpath = SinusDataset.generate(dpath, args.nsamples, 0, 4)
+            self.dataset = SinusDataset(data_dir=dpath, device=device)
         
         elif args.dataset == 'housing':
-            create_house_price()
-            dpath = os.path.join(DATA_DIR, 'regression')
-            self.dataset = HousePriceDataset(data_path = dpath, device=device)
+            dpath = os.path.join(data_dir, 'regression', 'housing')
+            dpath = HousePriceDataset.generate(dpath)
+            self.dataset = HousePriceDataset(data_dir=dpath, device=device)
         
         train_size = int(0.8 * len(self.dataset))
         val_size = len(self.dataset) - train_size
@@ -84,34 +115,53 @@ class RegressionFactory(Factory):
         self.val_loader = DataLoader(val_data, batch_size=args.batch_size)
         
         if args.training == 'bp':
-            self.model = BPSimpleRegressor(dropout=args.dropout, input_dim = self.dataset.sample_size)
-        elif args.training == 'pc':
-            self.model = PCSimpleRegressor(dropout=args.dropout, input_dim = self.dataset.sample_size)
-            self.model.to(device)
+            self.model = BPSimpleRegressor(
+                dropout=args.dropout,
+                input_dim=self.dataset.sample_size
+            )
+
+        if args.training == 'pc':
+            self.model = PCSimpleRegressor(
+                dropout=args.dropout,
+                input_dim=self.dataset.sample_size
+            )
                 
+        self.model.to(device)
         self.loss = torch.nn.MSELoss()
-        self.get_trainer()
+        self._set_trainer()
 
 
 class ClassificationFactory(Factory):
-    def __init__(self, args, DATA_DIR, device):
-        super().__init__(args, DATA_DIR, device)
-        if not args.dataset or args.dataset == "MNIST":
-            train_dataset = datasets.MNIST(DATA_DIR, train=True, download=True, transform=transforms.ToTensor())
-            val_dataset = datasets.MNIST(DATA_DIR, train=False, download=True, transform=transforms.ToTensor())
+
+    def __init__(
+        self,
+        args : edict,
+        data_dir: str,
+        device: torch.device
+    ):
+
+        super().__init__(args, data_dir, device)
+
+        if args.dataset == 'mnist':
+            dpath = os.path.join(data_dir, 'classification')
+            self.train_dataset = datasets.MNIST(dpath, train=True, download=True, transform=transforms.ToTensor())
+            self.val_dataset = datasets.MNIST(dpath, train=False, download=True, transform=transforms.ToTensor())
         
-        elif args.dataset == "FashionMNIST":
-            train_dataset = datasets.FashionMNIST(DATA_DIR, train=True, download=True, transform=transforms.ToTensor())
-            val_dataset = datasets.FashionMNIST(DATA_DIR, train=False, download=True, transform=transforms.ToTensor())
+        elif args.dataset == 'fashion':
+            dpath = os.path.join(data_dir, 'classification')
+            self.train_dataset = datasets.FashionMNIST(dpath, train=True, download=True, transform=transforms.ToTensor())
+            self.val_dataset = datasets.FashionMNIST(dpath, train=False, download=True, transform=transforms.ToTensor())
         
-        self.train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=args.batch_size, shuffle=True)
-        self.val_loader = torch.utils.data.DataLoader(dataset=val_dataset, batch_size=args.batch_size, shuffle=True)
+        self.train_loader = torch.utils.data.DataLoader(dataset=self.train_dataset, batch_size=args.batch_size, shuffle=True)
+        self.val_loader = torch.utils.data.DataLoader(dataset=self.val_dataset, batch_size=args.batch_size, shuffle=True)
         
         if args.training == 'bp': 
             self.model = BPSimpleClassifier(dropout=args.dropout)
-        elif args.training == 'pc': 
+
+        if args.training == 'pc': 
             self.model = PCSimpleClassifier(dropout=args.dropout)
-        self.model.to(device)
         
+        self.model.to(device)
         self.loss = torch.nn.CrossEntropyLoss()
-        self.get_trainer()
+        self._set_trainer()
+        
