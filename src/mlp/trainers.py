@@ -293,7 +293,6 @@ class PCTrainer(Trainer):
             tmp_energy = []
 
             for batch_idx, (X_train, y_train) in enumerate(train_loader):
-                
                 # in: train loop
                 self.model.train()
 
@@ -427,14 +426,13 @@ class PCTrainer(Trainer):
         np.save(file = os.path.join(self.args.logs_dir, "train_energy.npy"), arr = np.array(self.train_loss))
         np.save(file = os.path.join(self.args.logs_dir, "val_energy.npy"), arr = np.array(self.val_loss))
 
-        """generalization_error = self.evaluate_generalization(
+        generalization_error = self.evaluate_generalization(
             dataset=self.args.dataset,
             model=self.model,
             loss=self.loss,
             gen_loader=self.gen_loader, 
             device=self.device
-        )"""
-        generalization_error = None
+        )
 
         stats = edict()
         stats["best_val_loss"] = float(min(self.val_loss))
