@@ -119,8 +119,8 @@ class RegressionFactory(Factory):
         val_size = len(self.dataset) - train_size
         train_data, val_data = random_split(self.dataset, [train_size, val_size], generator=torch.Generator())
         
-        self.train_loader = DataLoader(train_data, batch_size=args.batch_size)
-        self.val_loader = DataLoader(val_data, batch_size=args.batch_size)
+        self.train_loader = DataLoader(train_data, batch_size=args.batch_size, drop_last=True)
+        self.val_loader = DataLoader(val_data, batch_size=args.batch_size, drop_last=True)
         
         if args.training == 'bp':
             self.model = BPSimpleRegressor(
