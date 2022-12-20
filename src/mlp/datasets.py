@@ -43,7 +43,8 @@ class SinusDataset(torch.utils.data.Dataset):
         upper_bound: float,
         device: torch.device
     ):
-        x = torch.tensor(np.linspace(lower_bound, upper_bound, num_samples, dtype=np.float32)).unsqueeze(1).clone().detach().to(device)
+        #TODO: torch gives warning: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+        x = torch.tensor(np.linspace(lower_bound, upper_bound, num_samples, dtype=np.float32)).unsqueeze(1).to(device)
         gt = torch.tensor(np.sin(1.0 + x*x), dtype=torch.float32).to(device)
         return x, gt
 

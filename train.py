@@ -86,9 +86,14 @@ def main():
         print(f'{"Generalization error": <21}: {round(stats["generalization"], 5)}')
 
     # =========== end training ===========
-    # TODO (Bug) where does X come from? -> better include into trainer
+    # TODO
+    X, y, gts = [], [], []
     if args.model == 'reg' and args.dataset == 'sine' and args.plot:
-        X, y, gt = np.concatenate(X).ravel(), np.concatenate(y).ravel(), np.concatenate(gt).ravel()
+        for batch, gt in gen_loader:
+            X.append(batch.detach().numpy())
+            y.append(model(batch).detach().numpy())
+            gts.append(gt.detach().numpy())
+        X, y, gts = np.concatenate(X).ravel(), np.concatenate(y).ravel(), np.concatenate(gts).ravel()
         outfile = os.path.join(plots_dir, 'noisy_sinus_plot.png')
         os.makedirs(plots_dir, exist_ok=True)
         plot(X, y, gt, outfile=outfile)
