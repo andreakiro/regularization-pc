@@ -50,6 +50,7 @@ def main():
     factory = TrainerFactory(args, DATA_DIR, device)
     train_loader = factory.train_loader
     val_loader = factory.val_loader
+    gen_loader = factory.gen_loader
     trainer = factory.trainer
     model = factory.model
     loss = factory.loss
@@ -72,7 +73,7 @@ def main():
 
     print(f"[Training is starting]")
 
-    stats = trainer.fit(model, train_loader, val_loader, plots_dir)
+    stats = trainer.fit(model, train_loader, val_loader, gen_loader, plots_dir)
 
     print(f"\n[Training is complete]")
     print(f'{"Number of epochs": <21}: {args.epochs}')
@@ -85,7 +86,7 @@ def main():
         print(f'{"Generalization error": <21}: {round(stats["generalization"], 5)}')
 
     # =========== end training ===========
-
+    # TODO (Bug) where does X come from? -> better include into trainer
     if args.model == 'reg' and args.dataset == 'sine' and args.plot:
         X, y, gt = np.concatenate(X).ravel(), np.concatenate(y).ravel(), np.concatenate(gt).ravel()
         outfile = os.path.join(plots_dir, 'noisy_sinus_plot.png')

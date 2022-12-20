@@ -9,7 +9,7 @@ import os
 from easydict import EasyDict as edict
 from abc import ABC, abstractclassmethod
 from src.optimizer import set_optimizer
-from src.utils import get_out_of_distribution_sinus, plot, augment
+from src.utils import get_out_of_distribution_sinus, plot
 from src.mlp.datasets import SinusDataset
 
 
@@ -20,7 +20,7 @@ class Trainer(ABC):
         dataset: str,
         model: nn.Module,
         loss: torch.nn.modules.loss,
-        val_loader: torch.utils.data.DataLoader,
+        gen_loader: torch.utils.data.DataLoader,
         device: torch.device = torch.device('cpu', 0)
     ) -> float:
         
@@ -28,39 +28,11 @@ class Trainer(ABC):
 
         with torch.no_grad():
 
-            if dataset == 'sine':
-
-                x, gt = SinusDataset.out_of_sample(100, -3, 12)
-                samples_X = torch.tensor(x, dtype=torch.float32).unsqueeze(1).to(device)
-                samples_gt = torch.tensor(gt, dtype=torch.float32).unsqueeze(1).to(device)
-
+            if gen_loader is not None:
                 losses = []
-                for idx, sample_x in enumerate(samples_X):
-                    ground_truth = samples_gt[idx]
+                for sample_x, ground_truth in gen_loader:
                     yhat = model(sample_x.to(device))
                     l = loss(yhat, ground_truth)
-                    losses.append(l.detach().cpu().numpy())
-
-                return float(np.average(losses).item())
-
-            
-            if dataset == 'mnist' or dataset == 'fashion':  
-                # this is way too slow!   
-                
-                losses = []
-                for X_val, y_val in val_loader:
-
-                    scores, x_val = [], []
-
-                    for sample in X_val:
-                        x_aug = augment(sample.cpu().numpy()) # .to(device) here instead?
-                        x_val.append(torch.Tensor(x_aug))
-
-                    x_vals = torch.stack(x_val)
-                    score = model(x_vals.to(device))
-                    scores.append(score)
-
-                    l = loss(torch.cat(scores), y_val)
                     losses.append(l.detach().cpu().numpy())
 
                 return float(np.average(losses).item())
@@ -94,12 +66,14 @@ class BPTrainer(Trainer):
         model: nn.Module,
         train_loader: torch.utils.data.DataLoader,
         val_loader: torch.utils.data.DataLoader,
+        gen_loader: torch.utils.data.DataLoader,
         plots_dir
     ):
 
         self.model = model.to(self.device)
         self.train_loader = train_loader
         self.val_loader = val_loader
+        self.gen_loader = gen_loader
         self.plots_dir = plots_dir
         
         early_stopper = EarlyStopper(
@@ -196,7 +170,7 @@ class BPTrainer(Trainer):
             dataset=self.args.dataset,
             model=self.model,
             loss=self.loss,
-            val_loader=self.val_loader, 
+            gen_loader=self.gen_loader, 
             device=self.device
         )
         
@@ -264,6 +238,7 @@ class PCTrainer(Trainer):
         model: nn.Module,
         train_loader: torch.utils.data.DataLoader,
         val_loader: torch.utils.data.DataLoader,
+        gen_loader: torch.utils.data.DataLoader,
         method: str = "torch"
     ) -> edict:
         """
@@ -279,6 +254,9 @@ class PCTrainer(Trainer):
         
         val_dataloader : torch.utils.data.DataLoader
                          dataloader for validation data
+                         
+        gen_dataloader : torch.utils.data.DataLoader
+                         dataloader for testing generalization of out-of-distribution data
         
         method : str 
                  method used to optimize the model; possible parameters are "torch", if the optimization is carried out 
@@ -293,6 +271,7 @@ class PCTrainer(Trainer):
         self.model = model.to(self.device)
         self.train_loader = train_loader
         self.val_loader = val_loader
+        self.gen_loader = gen_loader
 
         # note that this optimizer only knows about linear parameters 
         # because pc parameters have not been initialized yet
@@ -448,13 +427,14 @@ class PCTrainer(Trainer):
         np.save(file = os.path.join(self.args.logs_dir, "train_energy.npy"), arr = np.array(self.train_loss))
         np.save(file = os.path.join(self.args.logs_dir, "val_energy.npy"), arr = np.array(self.val_loss))
 
-        generalization_error = self.evaluate_generalization(
+        """generalization_error = self.evaluate_generalization(
             dataset=self.args.dataset,
             model=self.model,
             loss=self.loss,
-            val_loader=self.val_loader, 
+            gen_loader=self.gen_loader, 
             device=self.device
-        )
+        )"""
+        generalization_error = None
 
         stats = edict()
         stats["best_val_loss"] = float(min(self.val_loss))

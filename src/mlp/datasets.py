@@ -41,9 +41,10 @@ class SinusDataset(torch.utils.data.Dataset):
         num_samples: int,
         lower_bound: float,
         upper_bound: float,
+        device: torch.device
     ):
-        x = np.linspace(lower_bound, upper_bound, num_samples, dtype=np.float32)
-        gt = np.sin(3.0 - 4*x*x) # some other function of inputs x
+        x = torch.tensor(np.linspace(lower_bound, upper_bound, num_samples, dtype=np.float32)).unsqueeze(1).clone().detach().to(device)
+        gt = torch.tensor(np.sin(1.0 + x*x), dtype=torch.float32).to(device)
         return x, gt
 
 
@@ -154,4 +155,33 @@ class HousePriceDataset(torch.utils.data.Dataset):
         if torch.is_tensor(idx): idx = idx.tolist()
         x = self.X[idx]
         y = self.y[idx]
+        return x, y
+
+class OODImageDataset(torch.utils.data.Dataset):
+    """Out Of Distribution Image Dataset for augmented MNIST or FashionMNIST data
+    """
+    def __init__(
+        self,
+        data_dir: str,
+        device: torch.device
+    ):
+        data_x_path = os.path.join(data_dir, 'augmented_images.npy')
+        data_y_path = os.path.join(data_dir, 'augmented_images_gt.npy')
+
+        X = np.load(data_x_path)
+        y = np.load(data_y_path)
+        
+        self.X = torch.tensor(X, dtype=torch.float32)
+        self.y = torch.tensor(y, dtype=torch.long).unsqueeze(1)
+        self.device = device
+        
+    
+    def __len__(self):
+        return len(self.X)
+
+
+    def __getitem__(self, idx):
+        if torch.is_tensor(idx): idx = idx.tolist()
+        x = self.X[idx].to(self.device)
+        y = self.y[idx].to(self.device)
         return x, y
