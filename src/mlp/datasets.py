@@ -12,9 +12,9 @@ class SinusDataset(torch.utils.data.Dataset):
     def generate(
         cls,
         data_dir: str,
-        num_samples: int = 1000,
-        lower_bound: float = 0,
-        upper_bound: float = 4,
+        num_samples: int,
+        lower_bound: float,
+        upper_bound: float,
         noise_mean: float = 0,
         noise_std: float = 0.1,
         force_download: bool = False
@@ -30,8 +30,21 @@ class SinusDataset(torch.utils.data.Dataset):
         np.save(os.path.join(data_dir, 'sine_regression_x.npy'), x)
         np.save(os.path.join(data_dir, 'sine_regression_y.npy'), y)
         np.save(os.path.join(data_dir, 'sine_regression_gt.npy'), gt)
+        print(f'Created sine dataset at {data_dir}')
 
         return data_dir
+
+    
+    @classmethod
+    def out_of_sample(
+        cls,
+        num_samples: int,
+        lower_bound: float,
+        upper_bound: float,
+    ):
+        x = np.linspace(lower_bound, upper_bound, num_samples, dtype=np.float32)
+        gt = np.sin(3.0 - 4*x*x) # some other function of inputs x
+        return x, gt
 
 
     def __init__(
@@ -68,9 +81,11 @@ class HousePriceDataset(torch.utils.data.Dataset):
     DOWNLOAD_URL = 'https://polybox.ethz.ch/index.php/s/CyKkmOuKgsX9b4k/download'
 
     @classmethod
-    def generate(cls, data_dir, force_download: bool =False):
+    def generate(cls, data_dir: str, force_download: bool =False):
 
         if os.path.exists(data_dir) and not force_download: return data_dir
+
+        Path(data_dir).mkdir(parents=True, exist_ok=True)
         target_file = os.path.join(data_dir, 'house_prices_raw.csv')
         
         with requests.Session() as s:
@@ -107,9 +122,9 @@ class HousePriceDataset(torch.utils.data.Dataset):
         x_features = np.stack(df['encoded_x'].to_numpy())
         y_labels = df['SalePrice'].to_numpy().astype(np.int32)
 
-        Path(data_dir).mkdir(parents=True, exist_ok=True)
         np.save(os.path.join(data_dir, 'house_prices_x_features.npy'), x_features)
         np.save(os.path.join(data_dir, 'house_prices_y_labels.npy'), y_labels)
+        print(f'Created housing dataset at {data_dir}')
 
         return data_dir
 

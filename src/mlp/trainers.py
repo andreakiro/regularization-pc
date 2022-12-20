@@ -7,11 +7,67 @@ import time
 import os
 
 from easydict import EasyDict as edict
+from abc import ABC, abstractclassmethod
 from src.optimizer import set_optimizer
 from src.utils import get_out_of_distribution_sinus, plot, augment
+from src.mlp.datasets import SinusDataset
 
 
-class BPTrainer():
+class Trainer(ABC):
+
+    @staticmethod
+    def evaluate_generalization(
+        dataset: str,
+        model: nn.Module,
+        loss: torch.nn.modules.loss,
+        val_loader: torch.utils.data.DataLoader,
+        device: torch.device = torch.device('cpu', 0)
+    ) -> float:
+        
+        model.eval()
+
+        with torch.no_grad():
+
+            if dataset == 'sine':
+
+                x, gt = SinusDataset.out_of_sample(100, -3, 12)
+                samples_X = torch.tensor(x, dtype=torch.float32).unsqueeze(1).to(device)
+                samples_gt = torch.tensor(gt, dtype=torch.float32).unsqueeze(1).to(device)
+
+                losses = []
+                for idx, sample_x in enumerate(samples_X):
+                    ground_truth = samples_gt[idx]
+                    yhat = model(sample_x.to(device))
+                    l = loss(yhat, ground_truth)
+                    losses.append(l.detach().cpu().numpy())
+
+                return float(np.average(losses).item())
+
+            
+            if dataset == 'mnist' or dataset == 'fashion':  
+                # this is way too slow!   
+                
+                losses = []
+                for X_val, y_val in val_loader:
+
+                    scores, x_val = [], []
+
+                    for sample in X_val:
+                        x_aug = augment(sample.cpu().numpy()) # .to(device) here instead?
+                        x_val.append(torch.Tensor(x_aug))
+
+                    x_vals = torch.stack(x_val)
+                    score = model(x_vals.to(device))
+                    scores.append(score)
+
+                    l = loss(torch.cat(scores), y_val)
+                    losses.append(l.detach().cpu().numpy())
+
+                return float(np.average(losses).item())
+
+
+
+class BPTrainer(Trainer):
 
     def __init__(
         self,
@@ -116,8 +172,8 @@ class BPTrainer():
 
             # save model to disk
             epoch = epoch + 1 # for simplicity
-            if (epoch % self.args.checkpoint_frequency == 0) or (epoch == self.epochs - 1):
-                filename = f'epoch_{epoch}.pt' if epoch != self.epochs - 1 else 'last_model.pt'
+            if (epoch % self.args.checkpoint_frequency == 0) or (epoch == self.epochs):
+                filename = f'epoch_{epoch}.pt' if epoch != self.epochs else 'last_model.pt'
                 torch.save({
                     'model_state_dict': model.state_dict(),
                     'optimizer_state_dict': self.optimizer.state_dict()
@@ -132,67 +188,34 @@ class BPTrainer():
 
         
         end = time.time()
-        
+
         np.save(file = os.path.join(self.args.logs_dir, "train_loss.npy"), arr = np.array(self.train_loss))
         np.save(file = os.path.join(self.args.logs_dir, "val_loss.npy"), arr = np.array(self.val_loss))
 
+        generalization_error = self.evaluate_generalization(
+            dataset=self.args.dataset,
+            model=self.model,
+            loss=self.loss,
+            val_loader=self.val_loader, 
+            device=self.device
+        )
+        
         stats = edict()
         stats["best_val_loss"] = float(min(self.val_loss))
         stats["best_train_loss"] = float(min(self.train_loss))
         stats["best_epoch"] = int(np.argmin(self.val_loss))+1
         stats['time'] = end - start
-        
-        stats = self.conclude_training(stats, val_loader)
+
+        if generalization_error is not None:
+            stats['generalization'] = generalization_error
 
         wandb.finish()
 
         return stats
-    
-    def conclude_training(self, stats, val_loader):
-        # final evaluation or plotting
-        self.model.eval()
-        with torch.no_grad():
-            if self.args.dataset == "sinus" or (self.args.model == "reg" and self.args.dataset is None):
-                samples_X, samples_gt = get_out_of_distribution_sinus(400)
-                samples_X = torch.tensor(samples_X, dtype=torch.float32).unsqueeze(1).to(self.device)
-                samples_gt = torch.tensor(samples_gt, dtype=torch.float32).unsqueeze(1).to(self.device)
-                X, y, gt = [], [], []
-                losses = []
-                for idx, sample_x in enumerate(samples_X):
-                    groundtruth = samples_gt[idx]
-                    prediction = self.model(sample_x.to(self.device))
-                    losses.append(self.loss(input=prediction, target=groundtruth).detach().cpu().numpy())
-                    X.append(sample_x.detach().cpu().numpy())
-                    y.append(prediction.detach().cpu().numpy())
-                    gt.append(groundtruth.detach().cpu().numpy())
-                stats['generalization_loss'] = float(np.average(losses).item())
-                
-                if self.args.plot:
-                    X, y, gt = np.concatenate(X).ravel(), np.concatenate(y).ravel(), np.concatenate(gt).ravel()
-                    outfile = os.path.join(self.plots_dir, 'noisy_sinus_plot.png')
-                    os.makedirs(self.plots_dir, exist_ok=True)
-                    plot(X, y, gt, outfile=outfile)
-            
-            elif self.args.model == "clf":
-                # warp data
-                losses = []
-                for X_val, y_val in self.val_loader:
-                    scores = []
-                    x_val = []
-                    for sample in X_val:
-                        x = augment(sample.cpu().numpy())
-                        x_val.append(torch.Tensor(x))
-                    x_vals = torch.stack(x_val)
-                    score = self.model(x_vals.to(self.device))
-                    scores.append(score)
-                    loss = self.loss(input=torch.cat(scores), target=y_val)
-                    losses.append(loss.detach().cpu().numpy())
-                stats['generalization_loss'] = float(np.average(losses).item())
-        
-        return stats
 
 
-class PCTrainer():
+
+class PCTrainer(Trainer):
     """
     Class for training a PC network.
 
@@ -411,7 +434,7 @@ class PCTrainer():
             # save model to disk
             epoch = epoch + 1 # for simplicity
             if (epoch % self.args.checkpoint_frequency == 0) or (epoch == self.epochs):
-                filename = f'epoch_{epoch}.pt' if epoch != self.epochs - 1 else 'last_model.pt'
+                filename = f'epoch_{epoch}.pt' if epoch != self.epochs else 'last_model.pt'
                 torch.save({
                     'model_state_dict': model.state_dict(),
                     'w_optimizer_state_dict': self.w_optimizer.state_dict(),
@@ -425,11 +448,22 @@ class PCTrainer():
         np.save(file = os.path.join(self.args.logs_dir, "train_energy.npy"), arr = np.array(self.train_loss))
         np.save(file = os.path.join(self.args.logs_dir, "val_energy.npy"), arr = np.array(self.val_loss))
 
+        generalization_error = self.evaluate_generalization(
+            dataset=self.args.dataset,
+            model=self.model,
+            loss=self.loss,
+            val_loader=self.val_loader, 
+            device=self.device
+        )
+
         stats = edict()
         stats["best_val_loss"] = float(min(self.val_loss))
         stats["best_train_loss"] = float(min(self.train_loss))
         stats["best_epoch"] = int(np.argmin(self.val_loss))+1
         stats['time'] = end - start
+
+        if generalization_error is not None:
+            stats['generalization'] = generalization_error
 
         wandb.finish()
 
