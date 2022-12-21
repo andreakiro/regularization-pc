@@ -73,7 +73,7 @@ def main():
 
     print(f"[Training is starting]")
 
-    stats = trainer.fit(model, train_loader, val_loader, gen_loader, plots_dir)
+    stats = trainer.fit(model, train_loader, val_loader, gen_loader)
 
     print(f"\n[Training is complete]")
     print(f'{"Number of epochs": <21}: {args.epochs}')

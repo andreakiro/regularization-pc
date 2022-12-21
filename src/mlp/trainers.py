@@ -66,15 +66,13 @@ class BPTrainer(Trainer):
         model: nn.Module,
         train_loader: torch.utils.data.DataLoader,
         val_loader: torch.utils.data.DataLoader,
-        gen_loader: torch.utils.data.DataLoader,
-        plots_dir
+        gen_loader: torch.utils.data.DataLoader
     ):
 
         self.model = model.to(self.device)
         self.train_loader = train_loader
         self.val_loader = val_loader
         self.gen_loader = gen_loader
-        self.plots_dir = plots_dir
         
         early_stopper = EarlyStopper(
             patience=self.args.patience, 
@@ -256,7 +254,7 @@ class PCTrainer(Trainer):
                          dataloader for validation data
                          
         gen_dataloader : torch.utils.data.DataLoader
-                         dataloader for testing generalization of out-of-distribution data
+                         dataloader for testing generalization of out-of-distribution data                 
         
         method : str 
                  method used to optimize the model; possible parameters are "torch", if the optimization is carried out 
