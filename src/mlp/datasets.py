@@ -115,14 +115,15 @@ class HousePriceDataset(torch.utils.data.Dataset):
                 if col == "Id" or col == "SalePrice": continue 
                 unique_values = unique_values_dict[col]
                 value = row[col]
-                encoded_x.append(np.where(unique_values == value)[0][0])
-            return np.array(encoded_x, dtype=np.int32)
+                encoded_x.append(np.where(unique_values == value)[0][0]/len(unique_values))
+            return np.array(encoded_x, dtype=np.float32)
 
         
         df['encoded_x'] = df.apply(lambda row: encode_house_price_dataset(row), axis=1)
 
         x_features = np.stack(df['encoded_x'].to_numpy())
-        y_labels = df['SalePrice'].to_numpy().astype(np.int32)
+        y_labels = df['SalePrice'].to_numpy().astype(np.float32)
+        y_labels = y_labels/np.max(y_labels)
 
         np.save(os.path.join(data_dir, 'house_prices_x_features.npy'), x_features)
         np.save(os.path.join(data_dir, 'house_prices_y_labels.npy'), y_labels)
