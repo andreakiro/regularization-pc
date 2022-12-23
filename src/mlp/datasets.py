@@ -122,8 +122,10 @@ class HousePriceDataset(torch.utils.data.Dataset):
         df['encoded_x'] = df.apply(lambda row: encode_house_price_dataset(row), axis=1)
 
         x_features = np.stack(df['encoded_x'].to_numpy())
-        y_labels = df['SalePrice'].to_numpy().astype(np.float32)
-        y_labels = y_labels/np.max(y_labels)
+        y_labels = df['SalePrice'].to_numpy().astype(np.float32) # y label is the house price
+        mean_house_prices = np.mean(y_labels)
+        std_house_prices = np.std(y_labels)
+        y_labels = (y_labels-mean_house_prices)/std_house_prices
 
         np.save(os.path.join(data_dir, 'house_prices_x_features.npy'), x_features)
         np.save(os.path.join(data_dir, 'house_prices_y_labels.npy'), y_labels)
