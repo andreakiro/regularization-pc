@@ -7,10 +7,8 @@ import time
 import os
 
 from easydict import EasyDict as edict
-from abc import ABC, abstractclassmethod
+from abc import ABC
 from src.optimizer import set_optimizer
-from src.utils import get_out_of_distribution_sinus, plot
-from src.mlp.datasets import SinusDataset
 
 
 class Trainer(ABC):
