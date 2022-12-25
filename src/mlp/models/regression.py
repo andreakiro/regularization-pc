@@ -16,10 +16,12 @@ class BPSimpleRegressor(nn.Module):
     ----------
     dropout : Optional[float] (default is 0)
               dropout probability
+    input_dim : Optional[int] (default is 1)
+              the size of a 1d sample
     """
-    def __init__(self, dropout: float = 0.0) -> None:
+    def __init__(self, dropout: float = 0.0, input_dim: int = 1) -> None:
         super(BPSimpleRegressor, self).__init__()
-        self.linear_1 = nn.Linear(1, 1024)
+        self.linear_1 = nn.Linear(input_dim, 1024)
         self.linear_2 = nn.Linear(1024, 1024)
         self.linear_3 = nn.Linear(1024, 1)
         self.dropout = nn.Dropout(p=dropout)
@@ -56,11 +58,13 @@ class PCSimpleRegressor(nn.Module):
     ----------
     dropout : Optional[float] (default is 0)
               dropout probability
+    input_dim : Optional[int] (default is 1)
+              the size of a 1d sample
     """
-    def __init__(self, dropout: float = 0.0) -> None:
+    def __init__(self, dropout: float = 0.0, input_dim: int = 1) -> None:
         
         super(PCSimpleRegressor, self).__init__()
-        self.linear_1 = nn.Linear(1, 1024)
+        self.linear_1 = nn.Linear(input_dim, 1024)
         self.linear_2 = nn.Linear(1024, 1024)
         self.linear_3 = nn.Linear(1024, 1)
         self.dropout = nn.Dropout(p=dropout)

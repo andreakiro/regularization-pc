@@ -7,10 +7,39 @@ import time
 import os
 
 from easydict import EasyDict as edict
+from abc import ABC, abstractclassmethod
 from src.optimizer import set_optimizer
+from src.utils import get_out_of_distribution_sinus, plot
+from src.mlp.datasets import SinusDataset
 
 
-class BPTrainer():
+class Trainer(ABC):
+
+    @staticmethod
+    def evaluate_generalization(
+        dataset: str,
+        model: nn.Module,
+        loss: torch.nn.modules.loss,
+        gen_loader: torch.utils.data.DataLoader,
+        device: torch.device = torch.device('cpu', 0)
+    ) -> float:
+        
+        model.eval()
+
+        with torch.no_grad():
+
+            if gen_loader is not None:
+                losses = []
+                for sample_x, ground_truth in gen_loader:
+                    yhat = model(sample_x.to(device))
+                    l = loss(yhat, ground_truth)
+                    losses.append(l.detach().cpu().numpy())
+
+                return float(np.average(losses).item())
+
+
+
+class BPTrainer(Trainer):
 
     def __init__(
         self,
@@ -37,11 +66,13 @@ class BPTrainer():
         model: nn.Module,
         train_loader: torch.utils.data.DataLoader,
         val_loader: torch.utils.data.DataLoader,
+        gen_loader: torch.utils.data.DataLoader
     ):
 
         self.model = model.to(self.device)
         self.train_loader = train_loader
         self.val_loader = val_loader
+        self.gen_loader = gen_loader
         
         early_stopper = EarlyStopper(
             patience=self.args.patience, 
@@ -113,8 +144,8 @@ class BPTrainer():
 
             # save model to disk
             epoch = epoch + 1 # for simplicity
-            if (epoch % self.args.checkpoint_frequency == 0) or (epoch == self.epochs - 1):
-                filename = f'epoch_{epoch}.pt' if epoch != self.epochs - 1 else 'last_model.pt'
+            if (epoch % self.args.checkpoint_frequency == 0) or (epoch == self.epochs):
+                filename = f'epoch_{epoch}.pt' if epoch != self.epochs else 'last_model.pt'
                 torch.save({
                     'model_state_dict': model.state_dict(),
                     'optimizer_state_dict': self.optimizer.state_dict()
@@ -129,15 +160,26 @@ class BPTrainer():
 
         
         end = time.time()
-        
+
         np.save(file = os.path.join(self.args.logs_dir, "train_loss.npy"), arr = np.array(self.train_loss))
         np.save(file = os.path.join(self.args.logs_dir, "val_loss.npy"), arr = np.array(self.val_loss))
 
+        generalization_error = self.evaluate_generalization(
+            dataset=self.args.dataset,
+            model=self.model,
+            loss=self.loss,
+            gen_loader=self.gen_loader, 
+            device=self.device
+        )
+        
         stats = edict()
         stats["best_val_loss"] = float(min(self.val_loss))
         stats["best_train_loss"] = float(min(self.train_loss))
         stats["best_epoch"] = int(np.argmin(self.val_loss))+1
         stats['time'] = end - start
+
+        if generalization_error is not None:
+            stats['generalization'] = generalization_error
 
         wandb.finish()
 
@@ -145,7 +187,7 @@ class BPTrainer():
 
 
 
-class PCTrainer():
+class PCTrainer(Trainer):
     """
     Class for training a PC network.
 
@@ -194,6 +236,7 @@ class PCTrainer():
         model: nn.Module,
         train_loader: torch.utils.data.DataLoader,
         val_loader: torch.utils.data.DataLoader,
+        gen_loader: torch.utils.data.DataLoader,
         method: str = "torch"
     ) -> edict:
         """
@@ -209,6 +252,9 @@ class PCTrainer():
         
         val_dataloader : torch.utils.data.DataLoader
                          dataloader for validation data
+                         
+        gen_dataloader : torch.utils.data.DataLoader
+                         dataloader for testing generalization of out-of-distribution data                 
         
         method : str 
                  method used to optimize the model; possible parameters are "torch", if the optimization is carried out 
@@ -223,6 +269,7 @@ class PCTrainer():
         self.model = model.to(self.device)
         self.train_loader = train_loader
         self.val_loader = val_loader
+        self.gen_loader = gen_loader
 
         # note that this optimizer only knows about linear parameters 
         # because pc parameters have not been initialized yet
@@ -244,7 +291,6 @@ class PCTrainer():
             tmp_energy = []
 
             for batch_idx, (X_train, y_train) in enumerate(train_loader):
-                
                 # in: train loop
                 self.model.train()
 
@@ -364,7 +410,7 @@ class PCTrainer():
             # save model to disk
             epoch = epoch + 1 # for simplicity
             if (epoch % self.args.checkpoint_frequency == 0) or (epoch == self.epochs):
-                filename = f'epoch_{epoch}.pt' if epoch != self.epochs - 1 else 'last_model.pt'
+                filename = f'epoch_{epoch}.pt' if epoch != self.epochs else 'last_model.pt'
                 torch.save({
                     'model_state_dict': model.state_dict(),
                     'w_optimizer_state_dict': self.w_optimizer.state_dict(),
@@ -378,11 +424,22 @@ class PCTrainer():
         np.save(file = os.path.join(self.args.logs_dir, "train_energy.npy"), arr = np.array(self.train_loss))
         np.save(file = os.path.join(self.args.logs_dir, "val_energy.npy"), arr = np.array(self.val_loss))
 
+        generalization_error = self.evaluate_generalization(
+            dataset=self.args.dataset,
+            model=self.model,
+            loss=self.loss,
+            gen_loader=self.gen_loader, 
+            device=self.device
+        )
+
         stats = edict()
         stats["best_val_loss"] = float(min(self.val_loss))
         stats["best_train_loss"] = float(min(self.train_loss))
         stats["best_epoch"] = int(np.argmin(self.val_loss))+1
         stats['time'] = end - start
+
+        if generalization_error is not None:
+            stats['generalization'] = generalization_error
 
         wandb.finish()
 
