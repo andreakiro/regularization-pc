@@ -22,7 +22,7 @@ parameters:
 
   # training hyperparams
   epochs:
-    values: [300, 500, 600, 800] # at some point, early stopping will step in
+    value: 800 # at some point, early stopping will step in
   lr:
     distribution: uniform
     min: 1e-4

@@ -17,6 +17,20 @@ source setup_cluster.sh
 wandb sweep  ./wnb/${SWEEP_FILE}.yaml
 wandb agent ${SWEEP_ID} --count ${number}
 ```
+#### Used sweep IDs:
+##### Finding best Optimizer for each Dataset:
+001: Fashion - BP
+002: MNIST - BP
+003: Housing - BP
+004: Sine - BP
+005: Fashion - PC
+006: MNIST - PC
+007: Housing - PC
+008: Sine - PC
+
+##### TBD: fix each dataset with its best optimizer and fix pc-initialization on "forward": find best pc-related parameters inclusively pc-optimizer
+Then: test dropout, fix all optimizers
+Then: test initialization, fix all optimizers
 
 ### Create sweep and run agents (jobs)
 ```
