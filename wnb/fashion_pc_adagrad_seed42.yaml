@@ -1,0 +1,55 @@
+# Wa&B Sweep
+project: bio-transformers
+program: train.py
+method: bayes
+
+metric:
+  name: test_loss
+  goal: minimize
+
+parameters:
+  wandb:
+    value: online
+
+  model:
+    value: clf
+  training:
+    value: pc
+  dataset:
+    value: fashion
+  seed:
+    value: 42
+
+  # training hyperparams
+  epochs:
+    values: [300, 500, 600, 800] 
+  lr:
+    distribution: uniform
+    min: 1e-4
+    max: 1e-2
+  batch-size:
+    values: [32, 64, 128] 
+
+  # optimizer hyperparams
+  optimizer:
+    value: adagrad
+  weight_decay:
+    values: [0, 0.0001, 0.0005, 0.001]
+  
+  # PC specific parameters
+  init:
+    value: forward
+  x_optimizer:
+    value: adam
+  clr:
+    value: 0.01
+  pc_weight_decay:
+    value: 0.001
+  iterations:
+    value: 100
+
+command:
+  - ${env}
+  - python3
+  - ${program}
+  - ${args}

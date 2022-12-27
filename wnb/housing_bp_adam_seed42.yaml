@@ -1,0 +1,43 @@
+# Wa&B Sweep
+project: bio-transformers
+program: train.py
+method: bayes
+
+metric:
+  name: test_loss
+  goal: minimize
+
+parameters:
+  wandb:
+    value: online
+
+  model:
+    value: reg
+  training:
+    value: bp
+  dataset:
+    value: housing
+  seed:
+    value: 42
+
+  # training hyperparams
+  epochs:
+    values: [300, 500, 600, 800] # at some point, early stopping will step in
+  lr:
+    distribution: uniform
+    min: 1e-4
+    max: 1e-2
+  batch-size:
+    values: [1, 32, 64, 128]
+
+  # optimizer hyperparams
+  optimizer:
+    value: adam
+  weight_decay:
+    values: [0, 0.0001, 0.0005, 0.001]
+
+command:
+  - ${env}
+  - python3
+  - ${program}
+  - ${args}
