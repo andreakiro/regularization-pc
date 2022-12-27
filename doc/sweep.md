@@ -26,5 +26,5 @@ sbatch --array=1-${num_agents} --wrap="wandb agent ${SWEEP_ID} --count ${number}
 
 ### Run file manually
 ```
-python3 train.py --model ${reg, clf, trf} --training ${bp, pc}
+python3 train.py --model ${reg, clf, trf} --training ${bp, pc} --dataset ${sine, housing, mnist, fashion}
 ```
