@@ -1,4 +1,5 @@
 # Wa&B Sweep
+entity: deep-learning-ethz
 project: bio-transformers
 program: train.py
 method: bayes
@@ -14,25 +15,37 @@ parameters:
   model:
     value: reg
   training:
-    value: bp
+    value: pc
+  dataset:
+    value: housing
   seed:
     value: 42
 
   # training hyperparams
   epochs:
-    values: [300, 500, 600, 800] 
+    value: 500
   lr:
-    distribution: uniform
-    min: 1e-4
-    max: 1e-2
+    values: [0.0001, 0.0005, 0.001, 0.005, 0.01]
   batch-size:
-    values: [32, 64, 128] 
+    values: [1, 32, 64, 128] 
 
   # optimizer hyperparams
   optimizer:
-    values: [adam, adagrad, rmsprop, momentum]
+    value: adagrad
   weight_decay:
     values: [0, 0.0001, 0.0005, 0.001]
+  
+  # PC specific parameters
+  init:
+    value: forward
+  x_optimizer:
+    values: adam
+  clr:
+    values: [0.0001, 0.001, 0.01, 0.1]
+  pc_weight_decay:
+    values: [0, 0.0005, 0.001]
+  iterations:
+    value: 50
 
 command:
   - ${env}

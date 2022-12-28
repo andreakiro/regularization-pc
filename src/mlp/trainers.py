@@ -100,6 +100,7 @@ class BPTrainer(Trainer):
                 score = self.model(X_train)
                 loss = self.loss(input=score, target=y_train)
                 loss.backward()
+                torch.nn.utils.clip_grad_norm_(model.parameters(), 10) # clip gradients
                 self.optimizer.step()
 
                 tmp_loss.append(loss.detach().cpu().numpy())
@@ -346,6 +347,7 @@ class PCTrainer(Trainer):
 
                 # weight update step
                 if method == "torch":
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), 10) # clip gradients
                     self.w_optimizer.step()
                 elif method == "custom":
                     self.model.backward_w()
