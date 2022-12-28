@@ -174,8 +174,8 @@ class ClassificationFactory(Factory):
             np.save(augmented_images_gt_path, augmented_imgs_gt)
             print("...Done")
                  
-        self.train_loader = torch.utils.data.DataLoader(dataset=self.train_dataset, batch_size=args.batch_size, shuffle=True)
-        self.val_loader = torch.utils.data.DataLoader(dataset=self.val_dataset, batch_size=args.batch_size, shuffle=True)
+        self.train_loader = torch.utils.data.DataLoader(dataset=self.train_dataset, batch_size=args.batch_size, shuffle=True, drop_last=True)
+        self.val_loader = torch.utils.data.DataLoader(dataset=self.val_dataset, batch_size=args.batch_size, shuffle=True, drop_last = True)
         self.gen_loader = OODImageDataset(data_dir=augmented_imgs_dir, device=device)
         
         if args.training == 'bp': 
