@@ -1,4 +1,5 @@
 # Wa&B Sweep
+entity: deep-learning-ethz
 project: bio-transformers
 program: train.py
 method: bayes
