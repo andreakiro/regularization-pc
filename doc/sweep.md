@@ -28,7 +28,7 @@ wandb agent ${SWEEP_ID} --count ${number}
 007: Housing - PC
 008: Sine - PC
 
-##### TBD: fix each dataset with its best optimizer and fix pc-initialization on "forward": find best pc-related parameters inclusively pc-optimizer
+##### TBD:
 Then: test dropout, fix all optimizers
 Then: test initialization, fix all optimizers
 
