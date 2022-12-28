@@ -17,20 +17,6 @@ source setup_cluster.sh
 wandb sweep  ./wnb/${SWEEP_FILE}.yaml
 wandb agent ${SWEEP_ID} --count ${number}
 ```
-#### Used sweep IDs:
-##### Finding best Optimizer for each Dataset:
-001: Fashion - BP
-002: MNIST - BP
-003: Housing - BP
-004: Sine - BP
-005: Fashion - PC
-006: MNIST - PC
-007: Housing - PC
-008: Sine - PC
-
-##### TBD:
-Then: test dropout, fix all optimizers
-Then: test initialization, fix all optimizers
 
 ### Create sweep and run agents (jobs)
 ```
@@ -38,7 +24,28 @@ wandb sweep ./wnb/${SWEEP_FILE}.yaml
 sbatch --array=1-${num_agents} --wrap="wandb agent ${SWEEP_ID} --count ${number}"
 ```
 
+### Create sweep and run agents (for experiments)
+```
+wandb sweep ./wnb/${SWEEP_FILE}.yaml
+sbatch --array=1-20 --wrap="wandb agent ${SWEEP_ID} --count 20" # for bp
+sbatch --array=1-20 --wrap="wandb agent ${SWEEP_ID} --count 40" # for pc
+```
+
 ### Run file manually
 ```
 python3 train.py --model ${reg, clf, trf} --training ${bp, pc} --dataset ${sine, housing, mnist, fashion}
 ```
+
+## Sweep Records
+### sweep-ids record table
+| who | sweep | sweep-id |
+|---|---|---|
+| andrea | mnist_bp_adagrad_seed42.yaml | umt60yvv |
+| andrea | mnist_bp_adam_seed42.yaml | fzsm09ta |
+| andrea | mnist_bp_rmsprop_seed42.yaml | gp2jvtle |
+| andrea | mnist_bp_momentum_seed42.yaml | 5ualz5b8 |
+
+---
+- TBD: fix each dataset with its best optimizer and fix pc-initialization on "forward": find best pc-related parameters inclusively pc-optimizer
+- Then: test dropout, fix all optimizers
+- Then: test initialization, fix all optimizers
