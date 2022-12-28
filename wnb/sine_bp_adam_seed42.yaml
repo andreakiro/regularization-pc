@@ -23,7 +23,7 @@ parameters:
 
   # training hyperparams
   epochs:
-    value: 800 # at some point, early stopping will step in
+    value: 500 # at some point, early stopping will step in
   lr:
     values: [0.0001, 0.0005, 0.001, 0.005, 0.01]
   batch-size:
