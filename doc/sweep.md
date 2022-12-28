@@ -45,7 +45,10 @@ python3 train.py --model ${reg, clf, trf} --training ${bp, pc} --dataset ${sine,
 | andrea | mnist_bp_rmsprop_seed42.yaml | gp2jvtle |
 | andrea | mnist_bp_momentum_seed42.yaml | 5ualz5b8 |
 
+| anne | fashion_bp_adagrad_seed42.yaml | q6j3zu02 |
+| anne | fashion_bp_adam_seed42.yaml | 1yutu8s2 |
+| anne | fashion_bp_rmsprop_seed42.yaml | uep82qrg |
+| anne | fashion_bp_momentum_seed42.yaml | bj7we2l7 |
 ---
-- TBD: fix each dataset with its best optimizer and fix pc-initialization on "forward": find best pc-related parameters inclusively pc-optimizer
-- Then: test dropout, fix all optimizers
-- Then: test initialization, fix all optimizers
+- TBD: test dropout, fix all optimizers
+- TBD: test initialization, fix all optimizers
