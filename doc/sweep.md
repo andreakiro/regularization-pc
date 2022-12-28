@@ -40,11 +40,18 @@ python3 train.py --model ${reg, clf, trf} --training ${bp, pc} --dataset ${sine,
 ### sweep-ids record table
 | who | sweep | sweep-id |
 |---|---|---|
-| andrea | mnist_bp_adagrad_seed42.yaml | umt60yvv |
-| andrea | mnist_bp_adam_seed42.yaml | fzsm09ta |
-| andrea | mnist_bp_rmsprop_seed42.yaml | gp2jvtle |
-| andrea | mnist_bp_momentum_seed42.yaml | 5ualz5b8 |
-
+| andrea | mnist_bp_adagrad_seed42.yaml | eq3d63v4 (5310498) |
+| andrea | mnist_bp_adam_seed42.yaml | 98w5uup7 (5310547) |
+| andrea | mnist_bp_rmsprop_seed42.yaml | 512yd9li (5310619) |
+| andrea | mnist_bp_momentum_seed42.yaml | jcvxvaof (5310673) |
+| andrea | mnist_pc_adagrad_adam_seed42.yaml | euh6q0tl (5310797) |
+| andrea | mnist_pc_adam_adam_seed42.yaml | ycappciw (5310849) |
+| andrea | mnist_pc_rmsprop_adam_seed42.yaml | qpcnqeri (5310917) |
+| andrea | mnist_pc_momentum_adam_seed42.yaml | 607stvh1 (5310968) |
+| andrea | mnist_pc_adagrad_momentum_seed42.yaml | lo6b8318 (5311028) |
+| andrea | mnist_pc_adam_momentum_seed42.yaml | g8ffnck4 (5311085) |
+| andrea | mnist_pc_rmsprop_momentum_seed42.yaml | qnmpck0o (5311159) |
+| andrea | mnist_pc_momentum_momentum_seed42.yaml | h43i61oa (5311211) |
 | anne | fashion_bp_adagrad_seed42.yaml | q6j3zu02 |
 | anne | fashion_bp_adam_seed42.yaml | 1yutu8s2 |
 | anne | fashion_bp_rmsprop_seed42.yaml | uep82qrg |
