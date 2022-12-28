@@ -49,6 +49,10 @@ python3 train.py --model ${reg, clf, trf} --training ${bp, pc} --dataset ${sine,
 | anne | fashion_bp_adam_seed42.yaml | 1yutu8s2 |
 | anne | fashion_bp_rmsprop_seed42.yaml | uep82qrg |
 | anne | fashion_bp_momentum_seed42.yaml | bj7we2l7 |
+| anne | fashion_pc_adagrad_seed42.yaml | 97z0xhl6 |
+| anne | fashion_pc_adam_seed42.yaml | chb1iz0y |
+| anne | fashion_pc_rmsprop_seed42.yaml | q8tjvkzo |
+| anne | fashion_pc_momentum_seed42.yaml | 8zpl7b9v |
 ---
 - TBD: test dropout, fix all optimizers
 - TBD: test initialization, fix all optimizers
