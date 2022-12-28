@@ -134,13 +134,13 @@ def main():
             "pc_iterations" : args.iterations,
         })
 
-    if args.optimizer == 'momentum':
+    if (args.x_optimizer == 'momentum' or args.x_optimizer == 'rmsprop'):
         logs.update({
             'momentum': args.momentum,
             'gamma': args.gamma
         })
 
-    if args.x_optimizer == 'momentum' and args.training == 'pc':
+    if (args.x_optimizer == 'momentum' or args.x_optimizer == 'rmsprop') and args.training == 'pc':
         logs.update({
             'pc_momentum': args.pc_momentum,
             'pc_gamma': args.pc_gamma
