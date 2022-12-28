@@ -1,0 +1,53 @@
+# Wa&B Sweep
+entity: deep-learning-ethz
+project: bio-transformers
+program: train.py
+method: bayes
+
+metric:
+  name: test_loss
+  goal: minimize
+
+parameters:
+  wandb:
+    value: online
+  model:
+    value: clf
+  training:
+    value: pc
+  dataset:
+    value: mnist
+  seed:
+    value: 42
+
+  # training hyperparams
+  epochs:
+    value: 800
+  lr:
+    values: [0.0001, 0.0005, 0.001, 0.005, 0.01]
+  batch-size:
+    values: [1, 32, 64, 128] 
+
+  # optimizer hyperparams
+  optimizer:
+    value: adagrad
+  weight_decay:
+    values: [0, 0.0001, 0.0005, 0.001]
+  
+  # PC specific parameters
+  init:
+    value: forward
+  x_optimizer:
+    value: adam
+  clr:
+    values: [0.0001, 0.001, 0.01, 0.1]
+  pc_weight_decay:
+    values: [0, 0.0005, 0.001]
+  iterations:
+    value: 50
+
+command:
+  - ${env}
+  - python3
+  - ${program}
+  - ${args}

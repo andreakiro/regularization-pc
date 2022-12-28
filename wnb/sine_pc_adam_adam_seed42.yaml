@@ -11,18 +11,19 @@ metric:
 parameters:
   wandb:
     value: online
+
   model:
-    value: clf
+    value: reg
   training:
     value: pc
   dataset:
-    value: mnist
+    value: sine
   seed:
     value: 42
 
   # training hyperparams
   epochs:
-    value: 500
+    value: 800
   lr:
     values: [0.0001, 0.0005, 0.001, 0.005, 0.01]
   batch-size:
@@ -30,7 +31,7 @@ parameters:
 
   # optimizer hyperparams
   optimizer:
-    value: adagrad
+    value: adam
   weight_decay:
     values: [0, 0.0001, 0.0005, 0.001]
   
@@ -38,17 +39,13 @@ parameters:
   init:
     value: forward
   x_optimizer:
-    values: [adagrad, adam, momentum, rmsprop]
+    value: adam
   clr:
-    values: [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.03, 0.05, 0.08, 0.1]
+    values: [0.0001, 0.001, 0.01, 0.1]
   pc_weight_decay:
-    values: [0, 0.0001, 0.0005, 0.001]
+    values: [0, 0.0005, 0.001]
   iterations:
-    values: [5, 10, 50, 100]
-  pc_momentum:
-    values: [0, 0.3, 0.6, 0.9]
-  pc_gamma:
-    values: [0, 0.001, 0.01, 0.1, 0.5] 
+    value: 50
 
 command:
   - ${env}
