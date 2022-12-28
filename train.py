@@ -63,6 +63,7 @@ def main():
     })
 
     wandb.init(
+        entity='deep-learning-ethz',
         project='bio-transformers',
         config = wandb_config,
         mode = args.wandb,
