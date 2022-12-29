@@ -33,22 +33,7 @@ class SinusDataset(torch.utils.data.Dataset):
         print(f'Created sine dataset at {data_dir}')
 
         return data_dir
-
     
-    @classmethod
-    def out_of_sample(
-        cls,
-        num_samples: int,
-        lower_bound: float,
-        upper_bound: float,
-        device: torch.device
-    ):
-        #TODO: torch gives warning: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
-        x = torch.tensor(np.linspace(lower_bound, upper_bound, num_samples, dtype=np.float32)).unsqueeze(1).to(device)
-        gt = torch.tensor(np.sin(1.0 + x*x), dtype=torch.float32).to(device)
-        return x, gt
-
-
     def __init__(
         self,
         data_dir: str,
@@ -75,6 +60,39 @@ class SinusDataset(torch.utils.data.Dataset):
         x = self.X[idx]
         y = self.y[idx]
         return x, y
+
+class OODSinusDataset(torch.utils.data.Dataset)  :
+    @classmethod
+    def generate(
+        cls,
+        num_samples: int,
+        lower_bound: float,
+        upper_bound: float,
+        device: torch.device
+    ):
+        #TODO: torch gives warning: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+        x = torch.tensor(np.linspace(lower_bound, upper_bound, num_samples), dtype=torch.float32).unsqueeze(1).to(device)
+        gt = torch.tensor(np.sin(1.0 + x*x), dtype=torch.float32).to(device)
+        return (x, gt)
+
+
+    def __init__(
+        self,
+        data
+    ):
+        self.X, self.gt = data
+        self.sample_size = 1
+
+
+    def __len__(self):
+        return len(self.X)
+
+
+    def __getitem__(self, idx):
+        if torch.is_tensor(idx): idx = idx.tolist()
+        x = self.X[idx]
+        gt = self.gt[idx]
+        return x, gt
 
 
 
