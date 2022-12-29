@@ -8,7 +8,7 @@ import os
 
 
 from src.mlp.trainers import BPTrainer, PCTrainer
-from src.mlp.datasets import SinusDataset, HousePriceDataset, OODImageDataset
+from src.mlp.datasets import SinusDataset, OODSinusDataset, HousePriceDataset, OODImageDataset
 from src.mlp.models.regression import BPSimpleRegressor, PCSimpleRegressor
 from src.mlp.models.classification import BPSimpleClassifier, PCSimpleClassifier
 from src.optimizer import set_optimizer
@@ -106,8 +106,9 @@ class RegressionFactory(Factory):
             dpath = SinusDataset.generate(dpath, args.nsamples, 0, 4)
             self.dataset = SinusDataset(data_dir=dpath, device=device)
             
-            out_of_data = SinusDataset.out_of_sample(args.nsamples, -0.5, 4.5, device)
-            self.gen_loader = DataLoader(out_of_data, batch_size=args.batch_size)
+            data = OODSinusDataset.generate(args.nsamples, -0.5, 4.5, device)
+            dataset = OODSinusDataset(data)
+            self.gen_loader = DataLoader(dataset, batch_size=1, drop_last=True)
         
         elif args.dataset == 'housing':
             dpath = os.path.join(data_dir, 'regression', 'housing')
