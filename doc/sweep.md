@@ -40,10 +40,6 @@ python3 train.py --model ${reg, clf, trf} --training ${bp, pc} --dataset ${sine,
 ### sweep-ids record table
 | who | sweep | sweep-id | name | Euler_job_id (Optional)
 |---|---|---|
-| andrea | mnist_bp_adagrad_seed42.yaml | umt60yvv |
-| andrea | mnist_bp_adam_seed42.yaml | fzsm09ta |
-| andrea | mnist_bp_rmsprop_seed42.yaml | gp2jvtle |
-| andrea | mnist_bp_momentum_seed42.yaml | 5ualz5b8 |
 
 | anne | fashion_bp_adagrad_seed42.yaml | 0jatqkyi | 5310172
 | anne | fashion_bp_adam_seed42.yaml | 1gtby7pv | 5310193
@@ -70,6 +66,20 @@ python3 train.py --model ${reg, clf, trf} --training ${bp, pc} --dataset ${sine,
 | anne | sine_pc_rmsprop_momentum_seed42.yaml | o7v5liv6 | 
 | anne | sine_pc_momentum_adam_seed42.yaml | xto93w0c | 5311685
 | anne | sine_pc_momentum_momentum_seed42.yaml | 5kxn6d81 | 5311648
+
+| andrea | mnist_bp_adagrad_seed42.yaml | eq3d63v4 (5310498) |
+| andrea | mnist_bp_adam_seed42.yaml | 98w5uup7 (5310547) |
+| andrea | mnist_bp_rmsprop_seed42.yaml | 512yd9li (5310619) |
+| andrea | mnist_bp_momentum_seed42.yaml | jcvxvaof (5310673) |
+| andrea | mnist_pc_adagrad_adam_seed42.yaml | euh6q0tl (5310797) |
+| andrea | mnist_pc_adam_adam_seed42.yaml | ycappciw (5310849) |
+| andrea | mnist_pc_rmsprop_adam_seed42.yaml | qpcnqeri (5310917) |
+| andrea | mnist_pc_momentum_adam_seed42.yaml | 607stvh1 (5310968) |
+| andrea | mnist_pc_adagrad_momentum_seed42.yaml | lo6b8318 (5311028) |
+| andrea | mnist_pc_adam_momentum_seed42.yaml | g8ffnck4 (5311085) |
+| andrea | mnist_pc_rmsprop_momentum_seed42.yaml | qnmpck0o (5311159) |
+| andrea | mnist_pc_momentum_momentum_seed42.yaml | h43i61oa (5311211) |
+
 ---
 - TBD: test dropout, fix all optimizers
 - TBD: test initialization, fix all optimizers
