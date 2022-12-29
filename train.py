@@ -97,7 +97,7 @@ def main():
         X, y, gts = np.concatenate(X).ravel(), np.concatenate(y).ravel(), np.concatenate(gts).ravel()
         outfile = os.path.join(plots_dir, 'noisy_sinus_plot.png')
         os.makedirs(plots_dir, exist_ok=True)
-        plot(X, y, gt, outfile=outfile)
+        plot(X, y, gts, outfile=outfile)
 
 
     # save model run parameters
