@@ -179,6 +179,7 @@ class BPTrainer(Trainer):
 
         if generalization_error is not None:
             stats['generalization'] = generalization_error
+            wandb.run.summary["generalization_error"] = generalization_error
 
         wandb.finish()
 
@@ -440,6 +441,7 @@ class PCTrainer(Trainer):
 
         if generalization_error is not None:
             stats['generalization'] = generalization_error
+            wandb.run.summary["generalization_error"] = generalization_error
 
         wandb.finish()
 
