@@ -78,5 +78,14 @@ python3 train.py --model ${reg, clf, trf} --training ${bp, pc} --dataset ${sine,
 | anne | fashion_pc_momentum_momentum_seed42.yaml | l6yr9ncr | 5311189
 
 ---
-- TBD: test dropout, fix all optimizers
-- TBD: test initialization, fix all optimizers
+Dropout
+| anne | 2_dropout_mnist_bp_seed42.yaml | grnn1330 | 5436286
+| anne | 2_dropout_mnist_pc_seed42.yaml | n7mkwdnc | 5436332
+
+| anne | 2_dropout_sine_bp_seed42.yaml | wmlpk7ce | 5436359
+| anne | 2_dropout_sine_pc_seed42.yaml | czdapdwk | 5436362
+
+---
+Initialization
+| anne | 2_init_mnist_pc_seed42.yaml | w121afgk | 5436406
+| anne | 2_init_sine_pc_seed42.yaml | gkhhc6yu | 5436409
