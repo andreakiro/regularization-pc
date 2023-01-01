@@ -38,20 +38,20 @@ python3 train.py --model ${reg, clf, trf} --training ${bp, pc} --dataset ${sine,
 
 ## Sweep Records
 ### sweep-ids record table
-| who | sweep | sweep-id | name | Euler_job_id (Optional)
+| who | sweep | sweep-id | name | Euler_job_id (Optional) | Euler-command (Optional sanity check)
 |---|---|---|
-| anne | sine_bp_adagrad_seed42.yaml | mwg5vjm5 | 5312199
-| anne | sine_bp_adam_seed42.yaml | 8ocsxge2 | 5312143
-| anne | sine_bp_rmsprop_seed42.yaml | twk3ehwy | 5312088
-| anne | sine_bp_momentum_seed42.yaml | ba3irv46 | 5312026
-| anne | sine_pc_adagrad_adam_seed42.yaml | wc9ctpq8 | 5311940
-| anne | sine_pc_adagrad_momentum_seed42.yaml | 8kjc0an3 | 5311988
-| anne | sine_pc_adam_adam_seed42.yaml | xzk0ksen | 5311903
-| anne | sine_pc_adam_momentum_seed42.yaml | bmk5thrp | 5311823
-| anne | sine_pc_rmsprop_adam_seed42.yaml | yumez8sz | 5311716
-| anne | sine_pc_rmsprop_momentum_seed42.yaml | o7v5liv6 | 
-| anne | sine_pc_momentum_adam_seed42.yaml | xto93w0c | 5311685
-| anne | sine_pc_momentum_momentum_seed42.yaml | 5kxn6d81 | 5311648
+| anne | sine_bp_adagrad_seed42.yaml | mwg5vjm5 | 5329763 | sbatch --time=5:00:00 --array=1-20 --wrap="wandb agent the-real-dl/bio-transformers/mwg5vjm5 --count 20"
+| anne | sine_bp_adam_seed42.yaml | 8ocsxge2 | 5329741 | sbatch --time=5:00:00 --array=1-20 --wrap="wandb agent the-real-dl/bio-transformers/8ocsxge2 --count 20"
+| anne | sine_bp_rmsprop_seed42.yaml | twk3ehwy | 5329714 | sbatch --time=5:00:00 --array=1-20 --wrap="wandb agent the-real-dl/bio-transformers/twk3ehwy --count 20"
+| anne | sine_bp_momentum_seed42.yaml | ba3irv46 | 5329687 | sbatch --time=5:00:00 --array=1-20 --wrap="wandb agent the-real-dl/bio-transformers/ba3irv46 --count 20"
+| anne | sine_pc_adagrad_adam_seed42.yaml | wc9ctpq8 | 5329663 | sbatch --time=5:00:00 --array=1-20 --wrap="wandb agent the-real-dl/bio-transformers/wc9ctpq8 --count 40"
+| anne | sine_pc_adagrad_momentum_seed42.yaml | 8kjc0an3 | 5329622 | sbatch --time=5:00:00 --array=1-20 --wrap="wandb agent the-real-dl/bio-transformers/8kjc0an3 --count 40"
+| anne | sine_pc_adam_adam_seed42.yaml | xzk0ksen | 5329596 | sbatch --time=5:00:00 --array=1-20 --wrap="wandb agent the-real-dl/bio-transformers/xzk0ksen --count 40"
+| anne | sine_pc_adam_momentum_seed42.yaml | bmk5thrp | 5329574 | sbatch --time=5:00:00 --array=1-20 --wrap="wandb agent the-real-dl/bio-transformers/bmk5thrp --count 40"
+| anne | sine_pc_rmsprop_adam_seed42.yaml | yumez8sz | 5329548 | sbatch --time=5:00:00 --array=1-20 --wrap="wandb agent the-real-dl/bio-transformers/yumez8sz --count 40"
+| anne | sine_pc_rmsprop_momentum_seed42.yaml | o7v5liv6 | 5329512 | sbatch --time=5:00:00 --array=1-20 --wrap="wandb agent the-real-dl/bio-transformers/o7v5liv6 --count 40"
+| anne | sine_pc_momentum_adam_seed42.yaml | xto93w0c | 5329465 | sbatch --time=5:00:00 --array=1-20 --wrap="wandb agent the-real-dl/bio-transformers/xto93w0c --count 40"
+| anne | sine_pc_momentum_momentum_seed42.yaml | 5kxn6d81 | 5329440 | sbatch --time=5:00:00 --array=1-20 --wrap="wandb agent the-real-dl/bio-transformers/5kxn6d81 --count 40"
 | andrea | mnist_bp_adagrad_seed42.yaml | 4do451d5 (5311786) |
 | andrea | mnist_bp_adam_seed42.yaml | 5yeeq2a4 (5311847) |
 | andrea | mnist_bp_rmsprop_seed42.yaml | up3qoeyj (5311883) |
