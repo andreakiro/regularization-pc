@@ -45,7 +45,7 @@ parameters:
   pc_weight_decay:
     value: 0.0
   iterations:
-    value: 50 #TODO
+    value: 50
   pc_momentum:
     value: 0.5
   pc_gamma:
