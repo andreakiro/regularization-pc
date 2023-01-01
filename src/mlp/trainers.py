@@ -154,7 +154,6 @@ class BPTrainer(Trainer):
             if early_stopper.verify(self.val_loss[-1]):
                 print(f'[Early stop] val loss did not improve of more than \
                 {early_stopper.min_delta} for last {early_stopper.patience} epochs')
-                wandb.finish()
                 break
 
         
