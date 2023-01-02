@@ -104,7 +104,7 @@ class PCSoftmaxLayer(PCLayer):
 
     """
     def __init__(self, size: int) -> None:
-        super(PCLayer, self).__init__()
+        super(PCLayer, self).__init__(size)
 
     def forward(self, μ: torch.Tensor, init) -> torch.nn.Parameter:
         """
@@ -137,8 +137,8 @@ class PCSoftmaxLayer(PCLayer):
 
         """
         if init is not None: self.init(init=init, μ=μ)
-        x = torch.softmax(x, dim=-1)
-        μ = torch.softmax(μ, dim=-1)
+        x = torch.softmax(x, dim=1)
+        μ = torch.softmax(μ, dim=1)
 
         self.ε = torch.sum(torch.square(x - μ), dim=1)
         return x
