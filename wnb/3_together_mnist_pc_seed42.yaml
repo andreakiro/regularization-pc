@@ -1,0 +1,70 @@
+# Wa&B Sweep
+entity: the-real-dl
+project: bio-transformers
+program: train.py
+method: bayes
+
+metric:
+  name: test_loss
+  goal: minimize
+
+parameters:
+  wandb:
+    value: online
+
+  model:
+    value: clf
+  training:
+    value: pc
+  dataset:
+    value: mnist
+  seed:
+    value: 42
+
+  # training hyperparams
+  epochs:
+    value: 500
+  lr:
+    value: 0.0001
+  batch-size:
+    value: 64
+  patience:
+    value: 30
+  min_delta:
+    value: 0.001
+
+  # optimizer hyperparams
+  optimizer:
+    value: rmsprop
+  weight_decay:
+    value: 0.0005
+  momentum:
+    value: 0.6
+  gamma:
+    value: 0
+  
+  # dropout
+  dropout:
+    values: [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+
+  # PC specific parameters
+  init:
+    values: [zeros, normal, xavier_normal, forward]
+  x_optimizer:
+    value: momentum
+  clr:
+    value: 0.001
+  pc_weight_decay:
+    value: 0
+  iterations:
+    value: 50
+  pc_momentum:
+    value: 0.5
+  pc_gamma:
+    value: 0.8
+
+command:
+  - ${env}
+  - python3
+  - ${program}
+  - ${args}
