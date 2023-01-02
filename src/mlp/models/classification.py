@@ -2,7 +2,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from src.layers import PCLayer
+from src.layers import PCLayer, PCSoftmaxLayer
+
+INF = 1e+30 # infinity value, to reverse softmax
 
 
 class BPSimpleClassifier(nn.Module):
@@ -49,9 +51,10 @@ class PCSimpleClassifier(nn.Module):
         self.pc_layer1 = PCLayer(size=50)
         self.pc_layer2 = PCLayer(size=50)
         self.pc_layer3 = PCLayer(size=10)
+        self.pc_softmax = PCSoftmaxLayer(size=10)
 
         self.linear_layers = [self.linear_1, self.linear_2, self.linear_3]
-        self.pc_layers = [self.pc_layer1, self.pc_layer2, self.pc_layer3]
+        self.pc_layers = [self.pc_layer1, self.pc_layer2, self.pc_layer3, self.pc_softmax]
 
 
     def forward(self, input, init=None) -> torch.Tensor:
@@ -88,7 +91,7 @@ class PCSimpleClassifier(nn.Module):
         x_2 = self.pc_layer2(μ_2, init) if self.training else μ_2
         μ_3 = self.linear_3(x_2)
         x_3 = self.pc_layer3(μ_3, init) if self.training else μ_3
-        return F.log_softmax(x_3, dim=1)
+        return self.pc_softmax(x_3, init) if self.training else F.log_softmax(x_3, dim=1)
 
 
     def get_energy(self):
@@ -108,5 +111,6 @@ class PCSimpleClassifier(nn.Module):
         
         """
         output = F.one_hot(output, num_classes=10).type(torch.FloatTensor)
+        output *= INF
         self.pc_layers[-1].x = torch.nn.Parameter(output)
         
