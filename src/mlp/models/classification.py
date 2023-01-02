@@ -4,6 +4,8 @@ import torch.nn.functional as F
 
 from src.layers import PCLayer, PCSoftmaxLayer
 
+INF = 1e+30 # infinity value, to reverse softmax
+
 
 class BPSimpleClassifier(nn.Module):
     """
@@ -109,6 +111,6 @@ class PCSimpleClassifier(nn.Module):
         
         """
         output = F.one_hot(output, num_classes=10).type(torch.FloatTensor)
-        output *= 1e+30
+        output *= INF
         self.pc_layers[-1].x = torch.nn.Parameter(output)
         
