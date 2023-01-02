@@ -68,24 +68,34 @@ python3 train.py --model ${reg, clf, trf} --training ${bp, pc} --dataset ${sine,
 | anne | fashion_bp_adam_seed42.yaml | 1gtby7pv | 5310193
 | anne | fashion_bp_rmsprop_seed42.yaml | 8m7yfmsq | 5310306
 | anne | fashion_bp_momentum_seed42.yaml | 8jmex28k | 5310475
-| anne | fashion_pc_adagrad_adam_seed42.yaml | ujbl0nw9 | 5310598
-| anne | fashion_pc_adagrad_momentum_seed42.yaml | nki5ynwb | 5310696
-| anne | fashion_pc_adam_adam_seed42.yaml | j6u1zbtz | 5310777
-| anne | fashion_pc_adam_momentum_seed42.yaml | slmsr4uw | 5310826
-| anne | fashion_pc_rmsprop_adam_seed42.yaml | 2td03ada | 5310896
-| anne | fashion_pc_rmsprop_momentum_seed42.yaml | 9jllkbpf | 5311106
-| anne | fashion_pc_momentum_adam_seed42.yaml | lct3mndb | 5311137
-| anne | fashion_pc_momentum_momentum_seed42.yaml | l6yr9ncr | 5311189
+| anne | fashion_pc_adagrad_adam_seed42.yaml | 0xreb4ff | 5451741
+| anne | fashion_pc_adagrad_momentum_seed42.yaml | p1gq94wf | 5451772
+| anne | fashion_pc_adam_adam_seed42.yaml | yr37huql | 5451833
+| anne | fashion_pc_adam_momentum_seed42.yaml | 9zcbfhcd | 5451808
+| anne | fashion_pc_rmsprop_adam_seed42.yaml | 0mnuocew | 5451863
+| anne | fashion_pc_rmsprop_momentum_seed42.yaml | anqqxqtw | 5451889
+| anne | fashion_pc_momentum_adam_seed42.yaml | 66zhjwht | 5451947
+| anne | fashion_pc_momentum_momentum_seed42.yaml | 55f93huv | 5451923
 
 ---
 Dropout
-| anne | 2_dropout_mnist_bp_seed42.yaml | grnn1330 | 5436286
-| anne | 2_dropout_mnist_pc_seed42.yaml | n7mkwdnc | 5436332
+| anne | 2_dropout_mnist_bp_seed42.yaml | grnn1330 | 5440452
+| anne | 2_dropout_mnist_pc_seed42.yaml | n7mkwdnc | 5440472
 
-| anne | 2_dropout_sine_bp_seed42.yaml | wmlpk7ce | 5436359
-| anne | 2_dropout_sine_pc_seed42.yaml | czdapdwk | 5436362
+| anne | 2_dropout_sine_bp_seed42.yaml | qjtnzrew | 5436988
+| anne | 2_dropout_sine_pc_seed42.yaml | czdapdwk | 5440494
+
+dropout with name
+| anne | 2_dropout_mnist_bp_seed42.yaml | c1qwx9s1 | 5440645
+| anne | 2_dropout_mnist_pc_seed42.yaml | 0fshkrb4 | 5440665
+| anne | 2_dropout_sine_bp_seed42.yaml | xn7ki9mc | 5440693
+| anne | 2_dropout_sine_pc_seed42.yaml | me29xcjd | 5440715
 
 ---
 Initialization
-| anne | 2_init_mnist_pc_seed42.yaml | w121afgk | 5436406
-| anne | 2_init_sine_pc_seed42.yaml | gkhhc6yu | 5436409
+| anne | 2_init_mnist_pc_seed42.yaml | w121afgk | 5440516
+| anne | 2_init_sine_pc_seed42.yaml | gkhhc6yu | 5440536
+
+init with name
+| anne | 2_init_mnist_pc_seed42.yaml | h19w2fjn | 5440608
+| anne | 2_init_sine_pc_seed42.yaml | jqdu7i9v | 5440579
