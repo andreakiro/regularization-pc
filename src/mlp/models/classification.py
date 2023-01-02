@@ -52,7 +52,7 @@ class PCSimpleClassifier(nn.Module):
         self.pc_softmax = PCSoftmaxLayer(size=10)
 
         self.linear_layers = [self.linear_1, self.linear_2, self.linear_3]
-        self.pc_layers = [self.pc_layer1, self.pc_layer2, self.pc_layer3]
+        self.pc_layers = [self.pc_layer1, self.pc_layer2, self.pc_layer3, self.pc_softmax]
 
 
     def forward(self, input, init=None) -> torch.Tensor:
@@ -109,5 +109,6 @@ class PCSimpleClassifier(nn.Module):
         
         """
         output = F.one_hot(output, num_classes=10).type(torch.FloatTensor)
+        output *= 1e+30
         self.pc_layers[-1].x = torch.nn.Parameter(output)
         
