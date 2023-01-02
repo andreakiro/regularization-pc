@@ -23,17 +23,25 @@ parameters:
 
   # training hyperparams
   epochs:
-    value: 800
+    value: 500
   lr:
     value: 0.0001
   batch-size:
     value: 64
+  patience:
+    value: 30
+  min_delta:
+    value: 0.001
 
   # optimizer hyperparams
   optimizer:
     value: adam
   weight_decay:
     value: 0.001
+  
+  # dropout
+  dropout:
+    value: 0
 
   # PC specific parameters
   init:
