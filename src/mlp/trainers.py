@@ -274,6 +274,11 @@ class PCTrainer(Trainer):
         # because pc parameters have not been initialized yet
         self.w_optimizer = self.optimizer 
 
+        early_stopper = EarlyStopper(
+            patience=self.args.patience, 
+            min_delta=self.args.min_delta
+        )
+
         if self.args.optimizer == 'momentum':
             self.scheduler = torch.optim.lr_scheduler.MultiStepLR(
                 optimizer=self.optimizer, 
@@ -416,6 +421,12 @@ class PCTrainer(Trainer):
                     'w_optimizer_state_dict': self.w_optimizer.state_dict(),
                     'x_optimizer_state_dict': self.x_optimizer.state_dict()
                 }, os.path.join(self.args.models_dir, filename))
+
+            # optional early stopping
+            if early_stopper.verify(self.val_loss[-1]):
+                print(f'[Early stop] val loss did not improve of more than \
+                {early_stopper.min_delta} for last {early_stopper.patience} epochs')
+                break
 
         end = time.time()
 
