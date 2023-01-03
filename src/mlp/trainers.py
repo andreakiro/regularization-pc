@@ -294,6 +294,7 @@ class PCTrainer(Trainer):
                 self.model.train()
 
                 X_train, y_train = X_train.to(self.device), y_train.to(self.device)
+                self.model.reset_dropout_masks()
 
                 self.w_optimizer.zero_grad()
 
@@ -344,7 +345,7 @@ class PCTrainer(Trainer):
                         self.model.forward(X_train)
                         self.model.backward_x()
                         self.model.step_x(η=0.2)
-
+                
                 # weight update step
                 if method == "torch":
                     torch.nn.utils.clip_grad_norm_(model.parameters(), 10) # clip gradients
