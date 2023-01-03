@@ -30,7 +30,6 @@ def augment_single_img(image):
     bw, x, y = (1, 28, 28)
     def aff_trans(image):
         # code adapted from a previous project of Anne: https://github.com/An-nay-marks/3DVision_2022
-        # adapted from scikit docs
         rows, cols = image.shape[0], image.shape[1]
         src_cols = np.linspace(0, cols, 5)
         src_rows = np.linspace(0, rows, 2)
