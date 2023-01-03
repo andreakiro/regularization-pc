@@ -29,7 +29,7 @@ parameters:
   batch-size:
     value: 128
   patience:
-    value: 50
+    value: 500
   min_delta:
     value: 0.001
 

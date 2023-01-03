@@ -2,7 +2,7 @@
 entity: the-real-dl
 project: bio-transformers
 program: train.py
-method: bayes
+method: grid
 
 metric:
   name: test_loss
@@ -23,13 +23,13 @@ parameters:
 
   # training hyperparams
   epochs:
-    value: 500
+    value: 300
   lr:
     value: 0.0001
   batch-size:
     value: 64
   patience:
-    value: 30
+    value: 300
   min_delta:
     value: 0.001
 

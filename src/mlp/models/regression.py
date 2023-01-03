@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from joblib import Parallel, delayed
 
-from src.layers import PCLayer
+from src.layers import PCLayer, PCDropout
 
 
 class BPSimpleRegressor(nn.Module):
@@ -67,11 +67,14 @@ class PCSimpleRegressor(nn.Module):
         self.linear_1 = nn.Linear(input_dim, 1024)
         self.linear_2 = nn.Linear(1024, 1024)
         self.linear_3 = nn.Linear(1024, 1)
-        self.dropout = nn.Dropout(p=dropout)
 
         self.pc_layer1 = PCLayer(size=1024)
         self.pc_layer2 = PCLayer(size=1024)
         self.pc_layer3 = PCLayer(size=1)
+
+        self.pc_dropout1 = PCDropout(p=dropout)
+        self.pc_dropout2 = PCDropout(p=dropout)
+        self.dropout_layers = [self.pc_dropout1, self.pc_dropout2]
 
         self.linear_layers = [self.linear_1, self.linear_2, self.linear_3]
         self.pc_layers = [self.pc_layer1, self.pc_layer2, self.pc_layer3]
@@ -108,9 +111,9 @@ class PCSimpleRegressor(nn.Module):
         
         """
         self.input = input
-        μ_1 = self.f(self.dropout(self.linear_1(input)))
+        μ_1 = self.f(self.pc_dropout1(self.linear_1(input), self.training))
         x_1 = self.pc_layer1(μ_1, init) if self.training else μ_1
-        μ_2 = self.f(self.dropout(self.linear_2(x_1)))
+        μ_2 = self.f(self.pc_dropout2(self.linear_2(x_1),  self.training))
         x_2 = self.pc_layer2(μ_2, init) if self.training else μ_2
         μ_3 = self.linear_3(x_2)
         x_3 = self.pc_layer3(μ_3, init) if self.training else μ_3
@@ -135,6 +138,11 @@ class PCSimpleRegressor(nn.Module):
         """
         self.pc_layers[-1].x = torch.nn.Parameter(output)
 
+
+    def reset_dropout_masks(self):
+        for layer in self.dropout_layers:
+            layer.reset_mask()
+    
 
     # gradients computation and local W, x updates
 

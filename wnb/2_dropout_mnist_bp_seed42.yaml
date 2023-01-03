@@ -23,13 +23,13 @@ parameters:
 
   # training hyperparams
   epochs:
-    value: 500 # at some point, early stopping will step in
+    value: 200 # at some point, early stopping will step in
   lr:
     value: 0.0005
   batch-size:
     value: 64
   patience:
-    value: 50
+    value: 200
   min_delta:
     value: 0.001
 
