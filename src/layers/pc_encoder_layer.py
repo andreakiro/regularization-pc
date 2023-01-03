@@ -1,19 +1,39 @@
-# PC https://pytorch.org/docs/stable/generated/torch.nn.LayerNorm.html
-from typing import Union, Callable, Optional
-
-import torch
 import torch.nn.functional as F
-
 from torch import Tensor
-from torch.nn import Dropout
-from torch.nn import Linear
-from torch.nn import LayerNorm
 from torch.nn import TransformerEncoderLayer
-from torch.nn.modules.transformer import _get_activation_fn
+from typing import Union, Callable, Optional
+from src.layers import PCLayer
+from src.layers.pc_multi_head_attention import PCMultiheadAttention
 
-from src.layers import PCLayer, PCMultiheadAttention
 
 class PCTransformerEncoderLayer(TransformerEncoderLayer):
+    r"""
+    Custom PC Transformer Encoder Layer.
+
+    Parameters
+    ----------
+    d_model : int
+           The dimension of the input and the output of the encoder.
+    nhead : int
+            The number of PC Attention Heads.
+    dim_feedforward : int (optional)
+            The input dimension of the feed forward network. Defaults to 2048.
+    dropout : float (optional)
+            Probability of an element to be zeroed. Defaults to 0.1.
+    activation : Union[str, Callable[[Tensor], Tensor]] (optional)
+            Activation function of the intermediate layer. Defaults to F.relu.
+    layer_norm_eps : float (optional)
+            The eps value in layer normalization components. Defaults to 1e-5.
+    batch_first : bool (optional)
+        Whether the first dimension is the batch dimension. Defaults to False.
+    norm_first : bool (optional)
+            if True, layer norm is done prior to attention and feedforward. 
+            Otherwise it’s done after. Defaults to False.
+    device : str (optional)
+            'cpu' or 'gpu' possible. Defaults to None.
+    dtype _type_ : (optional): 
+            Data type used for the input and output Tensor. Defaults to None.
+    """
     __constants__ = ['batch_first', 'norm_first']
 
     def __init__(
@@ -44,14 +64,19 @@ class PCTransformerEncoderLayer(TransformerEncoderLayer):
     def forward(self, src: Tensor, src_mask: Optional[Tensor] = None,
                 src_key_padding_mask: Optional[Tensor] = None) -> Tensor:
         r"""Pass the input through the encoder layer.
-
-        Args:
-            src: the sequence to the encoder layer (required).
-            src_mask: the mask for the src sequence (optional).
-            src_key_padding_mask: the mask for the src keys per batch (optional).
-
-        Shape:
-            see the docs in Transformer class.
+        
+        Parameters:
+        ----------
+            src : Tensor
+                    The sequence to the encoder layer.
+            src_mask : Tensor (optional)
+                    The mask for the src sequence. Defaults to None.
+            src_key_padding_mask : Tensor (optional)
+                    The mask for the src keys per batch. Defaults to None.
+        
+        Returns
+        -------
+        Returns the output of the encoder layer given the input sequence and masks.
         """
 
         x = src
@@ -64,13 +89,13 @@ class PCTransformerEncoderLayer(TransformerEncoderLayer):
 
         return x
 
-    # PC self-attention block
+
     def _pc_sa_block(
         self, x: Tensor,
         attn_mask: Optional[Tensor], 
         key_padding_mask: Optional[Tensor]
     ) -> Tensor:
-    
+        """PC Self-Attention Block"""
         x = self.pc_self_attn(
             x, x, x,
             attn_mask=attn_mask,
@@ -80,8 +105,9 @@ class PCTransformerEncoderLayer(TransformerEncoderLayer):
 
         return self.dropout1(x)
 
-    # PC feed forward block
+
     def _pc_ff_block(self, x: Tensor) -> Tensor:
+        """PC Feed-Forward Block"""
         x = self.dropout(self.activation(self.linear1(x)))
         x = self.pc_ff_layer1(x)
         x = self.dropout2(self.linear2(x))

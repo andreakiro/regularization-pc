@@ -1,7 +1,7 @@
 import torch
 
 class PCLayer(torch.nn.Module):
-    """
+    r"""
     Custom Predictive Coding Layer
 
     Parameters
@@ -18,7 +18,7 @@ class PCLayer(torch.nn.Module):
 
 
     def forward(self, μ: torch.Tensor, init) -> torch.nn.Parameter:
-        """
+        r"""
         Forward pass of the PC layer with optional initialization.
 
         In the forward pass of the PC layer, we want to detach the output coming from previous layers of the network 
@@ -53,7 +53,7 @@ class PCLayer(torch.nn.Module):
 
 
     def init(self, init, μ, mean=0.0, std=1.0, gain=1.0) -> None:
-        """
+        r"""
         Initializes the activation of the layer neurons.
 
         Parameters
@@ -94,7 +94,7 @@ class PCLayer(torch.nn.Module):
 
 
 class PCSoftmaxLayer(PCLayer):
-    """
+    r"""
     Custom Predictive Coding Layer
 
     Parameters
@@ -105,6 +105,7 @@ class PCSoftmaxLayer(PCLayer):
     """
     def __init__(self, size: int) -> None:
         super().__init__(size)
+
 
     def forward(self, μ: torch.Tensor, init) -> torch.nn.Parameter:
         """
