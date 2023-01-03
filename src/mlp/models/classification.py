@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from src.layers import PCLayer, PCSoftmaxLayer
+from src.layers import PCLayer, PCSoftmaxLayer, PCDropout
 
 INF = 1e+30 # infinity value, to reverse softmax
 
@@ -46,12 +46,16 @@ class PCSimpleClassifier(nn.Module):
         self.linear_1 = nn.Linear(28*28, 50)
         self.linear_2 = nn.Linear(50, 50)
         self.linear_3 = nn.Linear(50, 10)
-        self.dropout  = nn.Dropout(p=dropout)
 
         self.pc_layer1 = PCLayer(size=50)
         self.pc_layer2 = PCLayer(size=50)
         self.pc_layer3 = PCLayer(size=10)
+        
         self.pc_softmax = PCSoftmaxLayer(size=10)
+
+        self.pc_dropout1 = PCDropout(p=dropout)
+        self.pc_dropout2 = PCDropout(p=dropout)
+        self.dropout_layers = [self.pc_dropout1, self.pc_dropout2]
 
         self.linear_layers = [self.linear_1, self.linear_2, self.linear_3]
         self.pc_layers = [self.pc_layer1, self.pc_layer2, self.pc_layer3, self.pc_softmax]
@@ -85,9 +89,9 @@ class PCSimpleClassifier(nn.Module):
         
         """
         input = input.reshape(-1, 28*28)
-        μ_1 = torch.relu(self.dropout(self.linear_1(input)))
+        μ_1 = torch.relu(self.pc_dropout1(self.linear_1(input), self.training))
         x_1 = self.pc_layer1(μ_1, init) if self.training else μ_1
-        μ_2 = torch.relu(self.dropout(self.linear_2(x_1)))
+        μ_2 = torch.relu(self.pc_dropout2(self.linear_2(x_1), self.training))
         x_2 = self.pc_layer2(μ_2, init) if self.training else μ_2
         μ_3 = self.linear_3(x_2)
         x_3 = self.pc_layer3(μ_3, init) if self.training else μ_3
@@ -114,3 +118,8 @@ class PCSimpleClassifier(nn.Module):
         output *= INF
         self.pc_layers[-1].x = torch.nn.Parameter(output)
         
+
+    def reset_dropout_masks(self):
+        for layer in self.dropout_layers:
+            layer.reset_mask()
+    
