@@ -28,6 +28,10 @@ parameters:
     value: 0.005
   batch-size:
     value: 128
+  patience:
+    value: 50
+  min_delta:
+    value: 0.001
 
   # dropout
   dropout:
