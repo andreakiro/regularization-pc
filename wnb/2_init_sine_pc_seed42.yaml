@@ -23,13 +23,13 @@ parameters:
 
   # training hyperparams
   epochs:
-    value: 100
+    value: 500
   lr:
     value: 0.0001
   batch-size:
     value: 64
   patience:
-    value: 100
+    value: 500
   min_delta:
     value: 0.001
 
