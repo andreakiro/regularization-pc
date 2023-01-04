@@ -1,5 +1,6 @@
 import torch
 
+
 class PCLayer(torch.nn.Module):
     r"""
     Custom Predictive Coding Layer
@@ -10,12 +11,12 @@ class PCLayer(torch.nn.Module):
            width of the previous output layer
 
     """
+
     def __init__(self, size: int) -> None:
         super().__init__()
         self.size = size
         self.x = None
-        self.ε = None 
-
+        self.ε = None
 
     def forward(self, μ: torch.Tensor, init) -> torch.nn.Parameter:
         r"""
@@ -47,10 +48,10 @@ class PCLayer(torch.nn.Module):
         Returns the current layer guess value.
 
         """
-        if init is not None: self.init(init=init, μ=μ)
+        if init is not None:
+            self.init(init=init, μ=μ)
         self.ε = torch.sum(torch.square(self.x - μ), dim=1)
         return self.x
-
 
     def init(self, init, μ, mean=0.0, std=1.0, gain=1.0) -> None:
         r"""
@@ -67,7 +68,7 @@ class PCLayer(torch.nn.Module):
                   (2010), using a normal distribution and gain=gain. 
                 - 'forward', hidden values initialized with the forward pass value .
 
-            
+
         μ : Optional[float] (default is 0.0)
             mean value used for 'normal' or 'forward' initialization. For 'forward', set μ to the forward pass value from the previous layer.
 
@@ -89,5 +90,6 @@ class PCLayer(torch.nn.Module):
         elif init == 'forward':
             x = μ.clone().detach()
         else:
-            raise ValueError(f"{init} is not a valid initialization technique!")
+            raise ValueError(
+                f"{init} is not a valid initialization technique!")
         self.x = torch.nn.Parameter(x)

@@ -1,12 +1,10 @@
+import numpy as np
+import torch
+import os
 from torch.utils.data import random_split, DataLoader
 from torchvision import datasets, transforms
 from easydict import EasyDict as edict
 from abc import ABC
-import numpy as np
-import torch
-import os
-
-
 from src.mlp.trainers import BPTrainer, PCTrainer
 from src.mlp.datasets import SinusDataset, OODSinusDataset, HousePriceDataset, OODImageDataset
 from src.mlp.models.regression import BPSimpleRegressor, PCSimpleRegressor
@@ -14,19 +12,32 @@ from src.mlp.models.classification import BPSimpleClassifier, PCSimpleClassifier
 from src.optimizer import set_optimizer
 
 
-
 class TrainerFactory:
-    
+    r"""
+    Trainer Factory class called in the train.py to contain model-and task specific objects.
+
+    Parameters:
+    ----------
+        args : edict
+                all parameters taken either from user input or default values, that are
+                necessary for the training.
+        data_dir : str
+                Path to the data directory.
+        device : torch.device
+                Whether to load the model and data on cpu or gpu.
+
+    """
+
     def __init__(
         self,
-        args : edict,
+        args: edict,
         data_dir: str,
         device: torch.device
     ):
 
         if args.model == 'reg':
             factory = RegressionFactory(args, data_dir, device)
-        
+
         elif args.model == 'clf':
             factory = ClassificationFactory(args, data_dir, device)
 
@@ -39,12 +50,25 @@ class TrainerFactory:
         self.gen_loader = factory.gen_loader
 
 
-
 class Factory(ABC):
+    r"""
+    Factory parent class for functions used in both Classification and Regression Factories.
+
+    Parameters:
+    ----------
+        args : edict
+                all parameters taken either from user input or default values, that are
+                necessary for the training.
+        data_dir : str
+                Path to the data directory.
+        device : torch.device
+                Whether to load the model and data on cpu or gpu.
+
+    """
 
     def __init__(
         self,
-        args : edict,
+        args: edict,
         data_dir: str,
         device: torch.device
     ):
@@ -53,10 +77,14 @@ class Factory(ABC):
         self.data_dir = data_dir
         self.device = device
         self.loss = None
-        
 
     def _set_trainer(self):
+        r"""Sets the BP and PC Trainer and the Optimizer according to the args.
 
+        Returns:
+            Factory: self
+
+        """
         self.optimizer = set_optimizer(
             paramslist=torch.nn.ParameterList(self.model.parameters()),
             optimizer=self.args.optimizer,
@@ -67,33 +95,47 @@ class Factory(ABC):
 
         if self.args.training == 'bp':
             self.trainer = BPTrainer(
-                args      = self.args,
-                epochs    = self.args.epochs,
-                optimizer = self.optimizer,
-                loss      = self.loss,
-                device    = self.device
+                args=self.args,
+                epochs=self.args.epochs,
+                optimizer=self.optimizer,
+                loss=self.loss,
+                device=self.device
             )
 
         elif self.args.training == 'pc':
             self.trainer = PCTrainer(
-                args      = self.args,
-                epochs    = self.args.epochs,
-                optimizer = self.optimizer,
-                loss      = self.loss,
-                device    = self.device,
-                init       = self.args.init,
-                iterations = self.args.iterations,
-                clr        = self.args.clr,
+                args=self.args,
+                epochs=self.args.epochs,
+                optimizer=self.optimizer,
+                loss=self.loss,
+                device=self.device,
+                init=self.args.init,
+                iterations=self.args.iterations,
+                clr=self.args.clr,
             )
 
         return self
 
 
 class RegressionFactory(Factory):
+    r"""
+    Factory class for Regression task. Generates the different datasets, losses, models, trainers and optimizers 
+
+    Parameters:
+    ----------
+        args : edict
+                all parameters taken either from user input or default values, that are
+                necessary for the training.
+        data_dir : str
+                Path to the data directory.
+        device : torch.device
+                Whether to load the model and data on cpu or gpu.
+
+    """
 
     def __init__(
         self,
-        args : edict,
+        args: edict,
         data_dir: str,
         device: torch.device
     ):
@@ -104,24 +146,27 @@ class RegressionFactory(Factory):
             dpath = os.path.join(data_dir, 'regression', 'sine')
             dpath = SinusDataset.generate(dpath, args.nsamples, 0, 4)
             self.dataset = SinusDataset(data_dir=dpath, device=device)
-            
+
             data = OODSinusDataset.generate(args.nsamples, -0.5, 4.5, device)
             dataset = OODSinusDataset(data)
             self.gen_loader = DataLoader(dataset, batch_size=1, drop_last=True)
-        
+
         elif args.dataset == 'housing':
             dpath = os.path.join(data_dir, 'regression', 'housing')
             dpath = HousePriceDataset.generate(dpath)
             self.dataset = HousePriceDataset(data_dir=dpath, device=device)
             self.gen_loader = None
-        
+
         train_size = int(0.8 * len(self.dataset))
         val_size = len(self.dataset) - train_size
-        train_data, val_data = random_split(self.dataset, [train_size, val_size], generator=torch.Generator())
-        
-        self.train_loader = DataLoader(train_data, batch_size=args.batch_size, drop_last=True)
-        self.val_loader = DataLoader(val_data, batch_size=args.batch_size, drop_last=True)
-        
+        train_data, val_data = random_split(
+            self.dataset, [train_size, val_size], generator=torch.Generator())
+
+        self.train_loader = DataLoader(
+            train_data, batch_size=args.batch_size, drop_last=True)
+        self.val_loader = DataLoader(
+            val_data, batch_size=args.batch_size, drop_last=True)
+
         if args.training == 'bp':
             self.model = BPSimpleRegressor(
                 dropout=args.dropout,
@@ -133,58 +178,82 @@ class RegressionFactory(Factory):
                 dropout=args.dropout,
                 input_dim=self.dataset.sample_size
             )
-                
+
         self.model.to(device)
         self.loss = torch.nn.MSELoss()
         self._set_trainer()
 
 
 class ClassificationFactory(Factory):
+    r"""
+    Factory class for Classification task. Generates the different datasets, losses, models, trainers and optimizers 
+
+    Parameters:
+    ----------
+        args : edict
+                all parameters taken either from user input or default values, that are
+                necessary for the training.
+        data_dir : str
+                Path to the data directory.
+        device : torch.device
+                Whether to load the model and data on cpu or gpu.
+
+    """
 
     def __init__(
         self,
-        args : edict,
+        args: edict,
         data_dir: str,
         device: torch.device
     ):
 
         super().__init__(args, data_dir, device)
         dpath = os.path.join(data_dir, 'classification')
-        
+
         if args.dataset == 'mnist':
-            
-            self.train_dataset = datasets.MNIST(dpath, train=True, download=True, transform=transforms.ToTensor())
-            self.val_dataset = datasets.MNIST(dpath, train=False, download=True, transform=transforms.ToTensor())
+
+            self.train_dataset = datasets.MNIST(
+                dpath, train=True, download=True, transform=transforms.ToTensor())
+            self.val_dataset = datasets.MNIST(
+                dpath, train=False, download=True, transform=transforms.ToTensor())
             augmented_imgs_dir = os.path.join(dpath, "augmentedMNIST")
-        
+
         elif args.dataset == 'fashion':
             dpath = os.path.join(data_dir, 'classification')
-            self.train_dataset = datasets.FashionMNIST(dpath, train=True, download=True, transform=transforms.ToTensor())
-            self.val_dataset = datasets.FashionMNIST(dpath, train=False, download=True, transform=transforms.ToTensor())
+            self.train_dataset = datasets.FashionMNIST(
+                dpath, train=True, download=True, transform=transforms.ToTensor())
+            self.val_dataset = datasets.FashionMNIST(
+                dpath, train=False, download=True, transform=transforms.ToTensor())
             augmented_imgs_dir = os.path.join(dpath, "augmentedFashionMNIST")
-            
+
         if not os.path.exists(augmented_imgs_dir):
             print(f"Augmenting {args.dataset} dataset...")
-            augmented_images_path = os.path.join(augmented_imgs_dir, "augmented_images.npy")
-            augmented_images_gt_path = os.path.join(augmented_imgs_dir, "augmented_images_gt.npy")
-            gen_loader = torch.utils.data.DataLoader(dataset=self.val_dataset, batch_size=1, shuffle=False)
-            augmented_imgs, augmented_imgs_gt = OODImageDataset.generate(gen_loader)
+            augmented_images_path = os.path.join(
+                augmented_imgs_dir, "augmented_images.npy")
+            augmented_images_gt_path = os.path.join(
+                augmented_imgs_dir, "augmented_images_gt.npy")
+            gen_loader = torch.utils.data.DataLoader(
+                dataset=self.val_dataset, batch_size=1, shuffle=False)
+            augmented_imgs, augmented_imgs_gt = OODImageDataset.generate(
+                gen_loader)
             os.makedirs(augmented_imgs_dir, exist_ok=True)
             np.save(augmented_images_path, augmented_imgs)
             np.save(augmented_images_gt_path, augmented_imgs_gt)
             print("...Done")
-                 
-        self.train_loader = torch.utils.data.DataLoader(dataset=self.train_dataset, batch_size=args.batch_size, shuffle=True, drop_last=True)
-        self.val_loader = torch.utils.data.DataLoader(dataset=self.val_dataset, batch_size=args.batch_size, shuffle=True, drop_last = True)
-        self.gen_loader = OODImageDataset(data_dir=augmented_imgs_dir, device=device)
-        
-        if args.training == 'bp': 
+
+        self.train_loader = torch.utils.data.DataLoader(
+            dataset=self.train_dataset, batch_size=args.batch_size, shuffle=True, drop_last=True)
+        self.val_loader = torch.utils.data.DataLoader(
+            dataset=self.val_dataset, batch_size=args.batch_size, shuffle=True, drop_last=True)
+        self.gen_loader = OODImageDataset(
+            data_dir=augmented_imgs_dir, device=device)
+
+        if args.training == 'bp':
             self.model = BPSimpleClassifier(dropout=args.dropout)
 
-        if args.training == 'pc': 
+        if args.training == 'pc':
             self.model = PCSimpleClassifier(dropout=args.dropout)
-        
+
         self.model.to(device)
         self.loss = torch.nn.CrossEntropyLoss()
         self._set_trainer()
-        

@@ -1,15 +1,17 @@
 # Regression model
 - Toy model and dataset to compare the effect of regularization techniques on PC and BP network
-- One of the dataset consists of points sampled from a generated noisy sine wave [0,4]
-
-![equation](https://latex.codecogs.com/svg.image?%5Cinline%20%5Csmall%20g(x)%20=%20f(x)%20&plus;%20%5Cepsilon%20=%20%5Csin(1&plus;x%5E2)%20&plus;%20%5Cmathcal%7BN%7D%20(0,%201)) 
+- Two datasets are available:
+    - generated noisy sine wave
+     `` f(x) = sin(x**2) + c``
+      where ``c`` is sampled from a gaussian distribution
+    - House Price Regression dataset (https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques/data)
 
 ## How to train the model
 
-- To train the model, simply use following command at root:
+- To train the model, simply use the following command at root:
 
 ```python
-python train.py --model reg --training [bp,pc]
+python train.py --model reg --training [bp,pc] --dataset [housing, sine]
 ```
 
 ### Optional adds. command-line parameters
@@ -37,10 +39,3 @@ python train.py --model reg --training [bp,pc]
 - `--verbose`: verbosity level of the training process {0, 1} (default:0)
 - `--checkpoint_frequency`: epochs frequency for model checkpoints (`.pt` file) (default:1) 
 - `--plot`: boolean indicating whether to plot regression results after training (default:false)
-
-## Reproducing our results
-For example, if you want to run the training with the default training hyper-parameters, logging the run in the `out/` folder, showing each training step updates, and plotting the validation result at the end of the training use
-
-```python
-python train.py --model reg --training bp --verbose 1 --plot True
-```

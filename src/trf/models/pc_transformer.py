@@ -8,6 +8,7 @@ from typing import Union, Callable, Optional, Any
 
 from src.layers import PCTransformerEncoderLayer
 
+
 class PCTransformer(Transformer):
     r"""A PC transformer model. User is able to modify the attributes as needed. The architecture
     is based on the paper "Attention Is All You Need". Ashish Vaswani, Noam Shazeer,
@@ -43,9 +44,9 @@ class PCTransformer(Transformer):
     """
 
     def __init__(
-        self, 
-        d_model: int = 512, 
-        nhead: int = 8, 
+        self,
+        d_model: int = 512,
+        nhead: int = 8,
         num_encoder_layers: int = 6,
         num_decoder_layers: int = 6, dim_feedforward: int = 2048, dropout: float = 0.1,
         activation: Union[str, Callable[[Tensor], Tensor]] = F.relu,
@@ -58,24 +59,25 @@ class PCTransformer(Transformer):
 
         pc_encoder_layer = PCTransformerEncoderLayer(
             d_model, nhead, dim_feedforward, dropout,
-            activation, layer_norm_eps, batch_first, norm_first, 
+            activation, layer_norm_eps, batch_first, norm_first,
             **factory_kwargs
         )
-        
+
         encoder_norm = LayerNorm(d_model, eps=layer_norm_eps, **factory_kwargs)
-        custom_encoder = TransformerEncoder(pc_encoder_layer, num_encoder_layers, encoder_norm)
+        custom_encoder = TransformerEncoder(
+            pc_encoder_layer, num_encoder_layers, encoder_norm)
 
         super(PCTransformer, self).__init__(
             d_model,
-            nhead, 
+            nhead,
             num_encoder_layers,
             num_decoder_layers, dim_feedforward, dropout,
             activation,
-            custom_encoder, 
+            custom_encoder,
             custom_decoder,
-            layer_norm_eps, 
-            batch_first, 
+            layer_norm_eps,
+            batch_first,
             norm_first,
-            device, 
+            device,
             dtype
         )

@@ -1,6 +1,7 @@
 import torch
 from .pc_layer import PCLayer
 
+
 class PCSoftmaxLayer(PCLayer):
     r"""
     Custom Predictive Coding Layer
@@ -11,12 +12,12 @@ class PCSoftmaxLayer(PCLayer):
            width of the previous output layer
 
     """
+
     def __init__(self, size: int) -> None:
         super().__init__(size)
 
-
     def forward(self, μ: torch.Tensor, init) -> torch.nn.Parameter:
-        """
+        r"""
         Forward pass of the PC layer with optional initialization.
 
         In the forward pass of the PC layer, we want to detach the output coming from previous layers of the network 
@@ -45,7 +46,8 @@ class PCSoftmaxLayer(PCLayer):
         Returns the current layer guess value.
 
         """
-        if init is not None: self.init(init=init, μ=μ)
+        if init is not None:
+            self.init(init=init, μ=μ)
         x = torch.nn.Parameter(torch.softmax(self.x, dim=1))
         μ = torch.softmax(μ, dim=1)
 

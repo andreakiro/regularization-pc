@@ -1,13 +1,15 @@
 # Classification model
 - Toy model to compare the effect of regularization techniques on PC and BP network
-- One of the dataset consists of the classic digit MNIST samples (available [here](http://yann.lecun.com/exdb/mnist/))
+- Two datasets are available:
+    - MNIST
+    - Fashion MNIST
 
 ## How to train the model
 
 - To train the model, simply use following command at root:
 
 ```python
-python train.py --model clf --training [bp,pc]
+python train.py --model clf --training [bp,pc] --dataset [mnist, fashion]
 ```
 
 ### Optional adds. command-line parameters
@@ -33,10 +35,3 @@ python train.py --model clf --training [bp,pc]
 #### IO and logging specific:
 - `--verbose`: verbosity level of the training process {0, 1} (default:0)
 - `--checkpoint_frequency`: epochs frequency for model checkpoints (`.pt` file) (default:1) 
-
-## Reproducing our results
-For example, if you want to run the training with the default training hyper-parameters, logging the run in the `out/` folder, showing each training step updates, and plotting the validation result at the end of the training use
-
-```python
-python train.py --model clf --training bp --verbose 1 --epochs 30
-```

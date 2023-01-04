@@ -1,28 +1,38 @@
-import os, json, torch, random
+import os
+import json
+import torch
+import random
 from datetime import datetime
 import numpy as np
 import wandb
-
 from src.factory import TrainerFactory
 from src.wnb_setup import create_wandb_config
 from src.parser import read_arguments
 from src.utils import plot
 
-device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+device = torch.device(
+    "cuda") if torch.cuda.is_available() else torch.device("cpu")
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(ROOT_DIR, 'data')
-OUT_DIR  = os.path.join(ROOT_DIR, 'out')
+OUT_DIR = os.path.join(ROOT_DIR, 'out')
 
 
 def main():
-
+    r"""
+    Main Function that executes the experiments:
+     - Data Preprocessing
+     - Training
+     - Testing
+     - Test Generalization on Out-Of-Distribution Data
+     - Log files / metrics to wandb
+    """
     # fetch run args
     args = read_arguments()
     wandb_config = create_wandb_config(args)
     dt_string = datetime.now().strftime("%Y%m%d%H%M%S")
 
-    if args.checkpoint_frequency == -1: 
+    if args.checkpoint_frequency == -1:
         args.checkpoint_frequency = args.epochs + 1
 
     # set seed for control
@@ -31,20 +41,21 @@ def main():
     random.seed(args.seed)
 
     # path to saving directories
-    logs_dir   = os.path.join(OUT_DIR, 'logs', args.model, dt_string)
-    plots_dir  = os.path.join(OUT_DIR, 'plots', args.model, dt_string)
+    logs_dir = os.path.join(OUT_DIR, 'logs', args.model, dt_string)
+    plots_dir = os.path.join(OUT_DIR, 'plots', args.model, dt_string)
     models_dir = os.path.join(OUT_DIR, 'models', args.model, dt_string)
-    
+
     args.update({
         'models_dir': models_dir,
         'plots_dir': plots_dir,
         'logs_dir': logs_dir,
     })
-    
+
     # safely create directories
     os.makedirs(logs_dir, exist_ok=True)
     os.makedirs(models_dir, exist_ok=True)
-    if args.plot: os.makedirs(plots_dir, exist_ok=True)
+    if args.plot:
+        os.makedirs(plots_dir, exist_ok=True)
 
     # define model, trainer and co.
     factory = TrainerFactory(args, DATA_DIR, device)
@@ -65,9 +76,9 @@ def main():
     wandb.init(
         entity='the-real-dl',
         project='bio-transformers',
-        config = wandb_config,
-        mode = args.wandb,
-        resume = 'auto',
+        config=wandb_config,
+        mode=args.wandb,
+        resume='auto',
     )
 
     # ============= training =============
@@ -84,21 +95,23 @@ def main():
     print(f'{"Best epoch": <21}: {stats["best_epoch"]}')
 
     if 'generalization' in stats.keys():
-        print(f'{"Generalization error": <21}: {round(stats["generalization"], 5)}')
+        print(
+            f'{"Generalization error": <21}: {round(stats["generalization"], 5)}')
 
     # =========== end training ===========
-    # TODO
-    X, y, gts = [], [], []
     if args.model == 'reg' and args.dataset == 'sine' and args.plot:
+        # For the sine dataset, the model's prediction can be plotted, as the data
+        # is scalar.
+        X, y, gts = [], [], []
         for batch, gt in gen_loader:
             X.append(batch.detach().numpy())
             y.append(model(batch).detach().numpy())
             gts.append(gt.detach().numpy())
-        X, y, gts = np.concatenate(X).ravel(), np.concatenate(y).ravel(), np.concatenate(gts).ravel()
+        X, y, gts = np.concatenate(X).ravel(), np.concatenate(
+            y).ravel(), np.concatenate(gts).ravel()
         outfile = os.path.join(plots_dir, 'noisy_sinus_plot.png')
         os.makedirs(plots_dir, exist_ok=True)
         plot(X, y, gts, outfile=outfile)
-
 
     # save model run parameters
     logfile = os.path.join(logs_dir, 'info.json')
@@ -106,21 +119,21 @@ def main():
     logs = {
         "model": args.model,
         "dataset": args.dataset,
-        "framework" : args.training,
+        "framework": args.training,
         "seed": args.seed,
-        "device" : str(device),
-        "loss" : loss._get_name(),
-        "optimizer" : args.optimizer,
-        "epochs" : args.epochs,
-        "batch_size" : args.batch_size,
-        "learning_rate" : args.lr,
+        "device": str(device),
+        "loss": loss._get_name(),
+        "optimizer": args.optimizer,
+        "epochs": args.epochs,
+        "batch_size": args.batch_size,
+        "learning_rate": args.lr,
         "weight_decay": args.weight_decay,
-        "dropout" : args.dropout,
+        "dropout": args.dropout,
     }
 
-    if args.model == 'reg': 
+    if args.model == 'reg':
         logs.update({
-            "nsamples" : args.nsamples,
+            "nsamples": args.nsamples,
             "es_patience": args.patience,
             "es_min_delta": args.min_delta
         })
@@ -131,7 +144,7 @@ def main():
             "pc_optimizer": args.x_optimizer,
             "pc_clr": args.clr,
             'pc_weight_dacay': args.pc_weight_decay,
-            "pc_iterations" : args.iterations,
+            "pc_iterations": args.iterations,
         })
 
     if (args.x_optimizer == 'momentum' or args.x_optimizer == 'rmsprop'):
@@ -146,7 +159,7 @@ def main():
             'pc_gamma': args.pc_gamma
         })
 
-    logs.update({ "results": stats })
+    logs.update({"results": stats})
 
     with open(logfile, 'w') as f:
         json.dump(logs, f, indent=2)
