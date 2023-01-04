@@ -15,13 +15,12 @@ class Trainer(ABC):
 
     @staticmethod
     def evaluate_generalization(
-        dataset: str,
         model: nn.Module,
         loss: torch.nn.modules.loss,
         gen_loader: torch.utils.data.DataLoader,
         device: torch.device = torch.device('cpu', 0)
     ) -> float:
-        
+ 
         model.eval()
 
         with torch.no_grad():
@@ -141,7 +140,6 @@ class BPTrainer(Trainer):
                 self.val_loss.append(np.average(tmp_loss))
 
             self.gen_error.append(self.evaluate_generalization(
-                dataset=self.args.dataset,
                 model=self.model,
                 loss=self.loss,
                 gen_loader=self.gen_loader, 
@@ -179,15 +177,7 @@ class BPTrainer(Trainer):
         end = time.time()
 
         np.save(file = os.path.join(self.args.logs_dir, "train_loss.npy"), arr = np.array(self.train_loss))
-        np.save(file = os.path.join(self.args.logs_dir, "val_loss.npy"), arr = np.array(self.val_loss))
-
-        # generalization_error = self.evaluate_generalization(
-        #     dataset=self.args.dataset,
-        #     model=self.model,
-        #     loss=self.loss,
-        #     gen_loader=self.gen_loader, 
-        #     device=self.device
-        # )
+        np.save(file = os.path.join(self.args.logs_dir, "val_loss.npy"), arr = np.array(self.val_loss))         
         
         stats = edict()
         stats["best_val_loss"] = float(min(self.val_loss))
@@ -195,10 +185,6 @@ class BPTrainer(Trainer):
         stats["generalization"] = float(min(self.gen_error))
         stats["best_epoch"] = int(np.argmin(self.val_loss))+1
         stats['time'] = end - start
-
-        # if generalization_error is not None:
-        #     stats['generalization'] = generalization_error
-        #     wandb.run.summary["generalization_error"] = generalization_error
 
         wandb.finish()
 
@@ -475,24 +461,12 @@ class PCTrainer(Trainer):
         np.save(file = os.path.join(self.args.logs_dir, "train_energy.npy"), arr = np.array(self.train_loss))
         np.save(file = os.path.join(self.args.logs_dir, "val_energy.npy"), arr = np.array(self.val_loss))
 
-        # generalization_error = self.evaluate_generalization(
-        #     dataset=self.args.dataset,
-        #     model=self.model,
-        #     loss=self.loss,
-        #     gen_loader=self.gen_loader, 
-        #     device=self.device
-        # )
-
         stats = edict()
         stats["best_val_loss"] = float(min(self.val_loss))
         stats["best_train_loss"] = float(min(self.train_loss))
         stats['generalization'] = float(min(self.gen_error))
         stats["best_epoch"] = int(np.argmin(self.val_loss))+1
         stats['time'] = end - start
-
-        # if generalization_error is not None:
-        #     stats['generalization'] = generalization_error
-        #     wandb.run.summary["generalization_error"] = generalization_error
 
         wandb.finish()
 
