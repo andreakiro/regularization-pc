@@ -91,6 +91,8 @@ class BPTrainer(Trainer):
 
         self.train_loss = []
         self.val_loss = []
+        self.gen_error = []
+        self.l2 = []
 
 
     def fit(
@@ -171,6 +173,13 @@ class BPTrainer(Trainer):
                 self.scheduler.step()
 
             # in: eval loop
+            w_parameters = [layer.weight.clone().detach() for layer in self.model.linear_layers]
+            l2_norm = 0.0
+            for w in w_parameters:
+                l2_norm += torch.sum(torch.square(w)).numpy()
+
+            self.l2.append(l2_norm)
+
             self.model.eval()
             with torch.no_grad():
                 tmp_loss = []
@@ -182,9 +191,18 @@ class BPTrainer(Trainer):
 
                 self.val_loss.append(np.average(tmp_loss))
 
+            self.gen_error.append(self.evaluate_generalization(
+                model=self.model,
+                loss=self.loss,
+                gen_loader=self.gen_loader, 
+                device=self.device
+            ))
+
             # watch metrics in wandb
             wandb.log({'train_loss': self.train_loss[-1], 'epoch': epoch})
             wandb.log({'test_loss': self.val_loss[-1], 'epoch': epoch})
+            wandb.log({'gen_error': self.gen_error[-1], 'epoch': epoch})
+            wandb.log({'l2_norm': self.l2[-1], 'epoch': epoch})
 
             # log epoch summary
             if self.args.verbose:
@@ -213,22 +231,24 @@ class BPTrainer(Trainer):
         np.save(file = os.path.join(self.args.logs_dir, "train_loss.npy"), arr = np.array(self.train_loss))
         np.save(file = os.path.join(self.args.logs_dir, "val_loss.npy"), arr = np.array(self.val_loss))
 
-        generalization_error = self.evaluate_generalization(
-            model=self.model,
-            loss=self.loss,
-            gen_loader=self.gen_loader, 
-            device=self.device
-        )
+        # generalization_error = self.evaluate_generalization(
+        #     dataset=self.args.dataset,
+        #     model=self.model,
+        #     loss=self.loss,
+        #     gen_loader=self.gen_loader, 
+        #     device=self.device
+        # )
         
         stats = edict()
         stats["best_val_loss"] = float(min(self.val_loss))
         stats["best_train_loss"] = float(min(self.train_loss))
+        stats["generalization"] = float(min(self.gen_error))
         stats["best_epoch"] = int(np.argmin(self.val_loss))+1
         stats['time'] = end - start
 
-        if generalization_error is not None:
-            stats['generalization'] = generalization_error
-            wandb.run.summary["generalization_error"] = generalization_error
+        # if generalization_error is not None:
+        #     stats['generalization'] = generalization_error
+        #     wandb.run.summary["generalization_error"] = generalization_error
 
         wandb.finish()
 
@@ -288,6 +308,8 @@ class PCTrainer(Trainer):
         self.train_loss = []
         self.val_loss = []
         self.train_energy = []
+        self.gen_error = []
+        self.l2 = []
 
         self.init = init
         self.clr = clr
@@ -448,6 +470,13 @@ class PCTrainer(Trainer):
 
 
             # in: eval loop
+            w_parameters = [layer.weight.clone().detach() for layer in self.model.linear_layers]
+            l2_norm = 0.0
+            for w in w_parameters:
+                l2_norm += torch.sum(torch.square(w)).numpy()
+
+            self.l2.append(l2_norm)
+
             self.model.eval()
             
             with torch.no_grad():
@@ -465,10 +494,19 @@ class PCTrainer(Trainer):
 
                 self.val_loss.append(np.average(tmp_loss))
 
+            self.gen_error.append(self.evaluate_generalization(
+                model=self.model,
+                loss=self.loss,
+                gen_loader=self.gen_loader, 
+                device=self.device
+            ))
+
             # watch metrics in wandb
             wandb.log({'train_loss': self.train_loss[-1], 'epoch': epoch})
             wandb.log({'train_energy': self.train_energy[-1], 'epoch': epoch})
             wandb.log({'test_loss': self.val_loss[-1], 'epoch': epoch})
+            wandb.log({'gen_error': self.gen_error[-1], 'epoch': epoch})
+            wandb.log({'l2_norm': self.l2[-1], 'epoch': epoch})
                 
             # log epoch summary
             if self.args.verbose:
@@ -498,22 +536,24 @@ class PCTrainer(Trainer):
         np.save(file = os.path.join(self.args.logs_dir, "train_energy.npy"), arr = np.array(self.train_loss))
         np.save(file = os.path.join(self.args.logs_dir, "val_energy.npy"), arr = np.array(self.val_loss))
 
-        generalization_error = self.evaluate_generalization(
-            model=self.model,
-            loss=self.loss,
-            gen_loader=self.gen_loader, 
-            device=self.device
-        )
+        # generalization_error = self.evaluate_generalization(
+        #     dataset=self.args.dataset,
+        #     model=self.model,
+        #     loss=self.loss,
+        #     gen_loader=self.gen_loader, 
+        #     device=self.device
+        # )
 
         stats = edict()
         stats["best_val_loss"] = float(min(self.val_loss))
         stats["best_train_loss"] = float(min(self.train_loss))
+        stats['generalization'] = float(min(self.gen_error))
         stats["best_epoch"] = int(np.argmin(self.val_loss))+1
         stats['time'] = end - start
 
-        if generalization_error is not None:
-            stats['generalization'] = generalization_error
-            wandb.run.summary["generalization_error"] = generalization_error
+        # if generalization_error is not None:
+        #     stats['generalization'] = generalization_error
+        #     wandb.run.summary["generalization_error"] = generalization_error
 
         wandb.finish()
 

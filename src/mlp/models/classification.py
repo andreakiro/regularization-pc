@@ -22,6 +22,7 @@ class BPSimpleClassifier(nn.Module):
         self.linear_2 = nn.Linear(50, 50)
         self.linear_3 = nn.Linear(50, 10)
         self.dropout  = nn.Dropout(p=dropout)
+        self.linear_layers = [self.linear_1, self.linear_2, self.linear_3]
 
 
     def forward(self, x) ->  torch.Tensor:
