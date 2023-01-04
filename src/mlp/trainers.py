@@ -231,29 +231,15 @@ class BPTrainer(Trainer):
 
         end = time.time()
 
-        np.save(file=os.path.join(self.args.logs_dir, "train_loss.npy"),
-                arr=np.array(self.train_loss))
-        np.save(file=os.path.join(self.args.logs_dir, "val_loss.npy"),
-                arr=np.array(self.val_loss))
-
-        # generalization_error = self.evaluate_generalization(
-        #     dataset=self.args.dataset,
-        #     model=self.model,
-        #     loss=self.loss,
-        #     gen_loader=self.gen_loader,
-        #     device=self.device
-        # )
-
+        np.save(file = os.path.join(self.args.logs_dir, "train_loss.npy"), arr = np.array(self.train_loss))
+        np.save(file = os.path.join(self.args.logs_dir, "val_loss.npy"), arr = np.array(self.val_loss))         
+        
         stats = edict()
         stats["best_val_loss"] = float(min(self.val_loss))
         stats["best_train_loss"] = float(min(self.train_loss))
         stats["generalization"] = float(min(self.gen_error))
         stats["best_epoch"] = int(np.argmin(self.val_loss))+1
         stats['time'] = end - start
-
-        # if generalization_error is not None:
-        #     stats['generalization'] = generalization_error
-        #     wandb.run.summary["generalization_error"] = generalization_error
 
         wandb.finish()
 
@@ -539,22 +525,10 @@ class PCTrainer(Trainer):
 
         end = time.time()
 
-        np.save(file=os.path.join(self.args.logs_dir, "train_loss.npy"),
-                arr=np.array(self.train_loss))
-        np.save(file=os.path.join(self.args.logs_dir, "val_loss.npy"),
-                arr=np.array(self.val_loss))
-        np.save(file=os.path.join(self.args.logs_dir,
-                "train_energy.npy"), arr=np.array(self.train_loss))
-        np.save(file=os.path.join(self.args.logs_dir,
-                "val_energy.npy"), arr=np.array(self.val_loss))
-
-        # generalization_error = self.evaluate_generalization(
-        #     dataset=self.args.dataset,
-        #     model=self.model,
-        #     loss=self.loss,
-        #     gen_loader=self.gen_loader,
-        #     device=self.device
-        # )
+        np.save(file = os.path.join(self.args.logs_dir, "train_loss.npy"), arr = np.array(self.train_loss))
+        np.save(file = os.path.join(self.args.logs_dir, "val_loss.npy"), arr = np.array(self.val_loss))
+        np.save(file = os.path.join(self.args.logs_dir, "train_energy.npy"), arr = np.array(self.train_loss))
+        np.save(file = os.path.join(self.args.logs_dir, "val_energy.npy"), arr = np.array(self.val_loss))
 
         stats = edict()
         stats["best_val_loss"] = float(min(self.val_loss))
@@ -562,10 +536,6 @@ class PCTrainer(Trainer):
         stats['generalization'] = float(min(self.gen_error))
         stats["best_epoch"] = int(np.argmin(self.val_loss))+1
         stats['time'] = end - start
-
-        # if generalization_error is not None:
-        #     stats['generalization'] = generalization_error
-        #     wandb.run.summary["generalization_error"] = generalization_error
 
         wandb.finish()
 
