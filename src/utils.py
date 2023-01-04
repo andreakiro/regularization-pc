@@ -5,26 +5,10 @@ import random
 
 from skimage.util import random_noise
 from skimage.transform import warp, rescale as rsc, resize, swirl, PiecewiseAffineTransform
-from tqdm import tqdm
 from torchvision import datasets
-
-from .mlp.datasets import OODImageDataset
 
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-def augment_dataset(dataloader):
-    """Downscaling, flipping, transformation, swirling, change in brightness and contrast of given 
-    MNIST / FashionMNIST dataloader
-    returns np arrays for augmented images and groundtruth
-    """
-    augmented_imgs = np.zeros((len(dataloader), 1, 28, 28)).astype(np.float32)
-    groundtruth = np.zeros((len(dataloader)))
-    for idx, (img, gt) in enumerate(tqdm(dataloader)):
-        augmented_imgs[idx] = augment_single_img(np.squeeze(img.numpy(), axis=0))
-        groundtruth[idx] = gt
-    
-    return  augmented_imgs, groundtruth
 
 def augment_single_img(image):
     bw, x, y = (1, 28, 28)

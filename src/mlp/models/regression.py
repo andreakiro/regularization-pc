@@ -2,13 +2,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from joblib import Parallel, delayed
-
 from src.layers import PCLayer, PCDropout
 
 
 class BPSimpleRegressor(nn.Module):
-    """
-    Simple ANN regressor, for backprop experiments.
+    r"""
+    Simple ANN regressor, for backprop experiments with scalar inputs and outputs.
 
     Consists of an input and an output layer having width 1 and two hidden layers having width 1024.
 
@@ -18,6 +17,7 @@ class BPSimpleRegressor(nn.Module):
               dropout probability
     input_dim : Optional[int] (default is 1)
               the size of a 1d sample
+    
     """
     def __init__(self, dropout: float = 0.0, input_dim: int = 1) -> None:
         super(BPSimpleRegressor, self).__init__()
@@ -29,7 +29,7 @@ class BPSimpleRegressor(nn.Module):
     
 
     def forward(self, x) ->  torch.Tensor:
-        """
+        r"""
         Computes a forward pass through the network.
 
         Parameters
@@ -49,8 +49,8 @@ class BPSimpleRegressor(nn.Module):
 
 
 class PCSimpleRegressor(nn.Module):
-    """
-    Simple ANN regressor, for predictive coding experiments. 
+    r"""
+    Simple ANN regressor, for predictive coding experiments with scalar inputs and outputs. 
     
     Consists of an input and an output layer having width 1 and two hidden layers having width 1024.
     Also has three pc layers that hold activations and prediction errors of the linear layers.
@@ -61,6 +61,7 @@ class PCSimpleRegressor(nn.Module):
               dropout probability
     input_dim : Optional[int] (default is 1)
               the size of a 1d sample
+    
     """
     def __init__(self, dropout: float = 0.0, input_dim: int = 1) -> None:
         
@@ -85,7 +86,7 @@ class PCSimpleRegressor(nn.Module):
 
 
     def forward(self, input, init=None) -> torch.Tensor:
-        """
+        r"""
         Computes a forward pass through the network. 
         
         If the model is in training mode, the forward pass is a predictive coding forward pass. Note this only does local computations.
@@ -122,7 +123,7 @@ class PCSimpleRegressor(nn.Module):
 
 
     def get_energy(self):
-        """
+        r"""
         Returns the total energy of the network.
 
         """
@@ -133,7 +134,7 @@ class PCSimpleRegressor(nn.Module):
         
     
     def fix_output(self, output):
-        """
+        r"""
         Sets the activation of the last pc_layer to the output.
         
         """
@@ -141,6 +142,10 @@ class PCSimpleRegressor(nn.Module):
 
 
     def reset_dropout_masks(self):
+        r"""
+        Resets the mask deciding on which element to perform dropout on.
+        
+        """
         for layer in self.dropout_layers:
             layer.reset_mask()
     
@@ -148,22 +153,61 @@ class PCSimpleRegressor(nn.Module):
     # gradients computation and local W, x updates
 
     def backward_x(self):
+        r"""
+        Computes the gradients for all x values (PC parameters)
+        
+        """
         self.grad_x = Parallel(n_jobs=len(self.pc_layers[:-1]))(delayed(self.grad_xi)(i) for i in range(len(self.pc_layers[:-1])))
 
     def backward_w(self):
+        r"""
+        Computes the gradients for all weights
+        
+        """
         self.grad_w = Parallel(n_jobs=len(self.linear_layers))(delayed(self.grad_wi)(i) for i in range(len(self.pc_layers)))
 
     def step_x(self, η):
+        r"""
+        Updates all x values with the previously computed gradients
+        
+        Parameters:
+        ----------
+        η : float
+                Learning rate. 
+        
+        """
         new_x = Parallel(n_jobs=len(self.pc_layers[:-1]))(delayed(self.step_xi)(i, η) for i in range(len(self.pc_layers[:-1])))
         for l, x in zip(self.pc_layers[:-1], new_x):
             l.x = x
 
     def step_w(self, η):
+        r"""
+        Updates all weights with the previously computed gradients
+        
+        Parameters:
+        ----------
+        η : float
+                Learning rate. 
+        
+        """
         new_w = Parallel(n_jobs=len(self.linear_layers))(delayed(self.step_wi)(i, η) for i in range(len(self.linear_layers)))
         for l, w in zip(self.linear_layers, new_w):
             l.weight.data = w
 
     def grad_xi(self, i):
+        r"""
+        Computes the gradient for the x value in the i-th PC layer. 
+        
+        Parameters:
+        ----------
+        i : idx
+                Index of the layer.
+        
+        Returns:
+        -------
+        the computed gradients
+        
+        """
         with torch.no_grad():
             e_i, e_ii = self.pc_layers[i].ε.detach()[:, :, None], self.pc_layers[i+1].ε.detach()[:, :, None]
             w_ii = self.linear_layers[i+1].weight.detach()[None, :, :].expand(e_i.shape[0], -1, -1)
@@ -172,6 +216,18 @@ class PCSimpleRegressor(nn.Module):
             return grad   
 
     def grad_wi(self, i):
+        r"""
+        Computes the gradient for the weights in the i-th layer. 
+        
+        Parameters:
+        ----------
+        i : idx
+                Index of the layer.
+        Returns:
+        -------
+        the computed gradients
+        
+        """
         with torch.no_grad():
             e_i = self.pc_layers[i].ε.detach()[:, :, None]
             w_i = self.linear_layers[i].weight.detach()[None, :, :].expand(e_i.shape[0], -1, -1)
@@ -180,10 +236,41 @@ class PCSimpleRegressor(nn.Module):
             return grad 
 
     def step_xi(self, i, η):
+        r"""
+        Updates the x values in the i-th PC layer with the previously computed gradients. 
+        
+        Parameters:
+        ----------
+        i : idx
+                Index of the layer.
+        η : float
+                Learning rate. 
+                
+        Returns:
+        -------
+        the new x of the i-th layer
+        
+        """
         with torch.no_grad():
             return torch.nn.Parameter(self.pc_layers[i].x - torch.matmul(self.grad_x[i], torch.Tensor([η])))
 
     def step_wi(self, i, η):
+        r"""
+        Updates the weights in the i-th layer with the previously computed gradients. 
+        
+        Parameters:
+        ----------
+        i : idx
+                Index of the layer.
+        η : float
+                Learning rate. 
+        
+        Returns:
+        -------
+        the new weights of the i-th layer
+        
+        
+        """
         with torch.no_grad():
             return torch.nn.Parameter(self.linear_layers[i].weight - torch.mul(torch.sum(self.grad_w[i], dim=0), η))
 
