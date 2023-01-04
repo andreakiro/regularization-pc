@@ -12,7 +12,6 @@ from src.mlp.datasets import SinusDataset, OODSinusDataset, HousePriceDataset, O
 from src.mlp.models.regression import BPSimpleRegressor, PCSimpleRegressor
 from src.mlp.models.classification import BPSimpleClassifier, PCSimpleClassifier
 from src.optimizer import set_optimizer
-from src.utils import augment_dataset
 
 
 
@@ -169,7 +168,7 @@ class ClassificationFactory(Factory):
             augmented_images_path = os.path.join(augmented_imgs_dir, "augmented_images.npy")
             augmented_images_gt_path = os.path.join(augmented_imgs_dir, "augmented_images_gt.npy")
             gen_loader = torch.utils.data.DataLoader(dataset=self.val_dataset, batch_size=1, shuffle=False)
-            augmented_imgs, augmented_imgs_gt = augment_dataset(gen_loader)
+            augmented_imgs, augmented_imgs_gt = OODImageDataset.generate(gen_loader)
             os.makedirs(augmented_imgs_dir, exist_ok=True)
             np.save(augmented_images_path, augmented_imgs)
             np.save(augmented_images_gt_path, augmented_imgs_gt)

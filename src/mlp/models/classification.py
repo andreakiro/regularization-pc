@@ -1,20 +1,20 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
 from src.layers import PCLayer, PCSoftmaxLayer, PCDropout
 
 INF = 1e+30 # infinity value, to reverse softmax
 
 
 class BPSimpleClassifier(nn.Module):
-    """
+    r"""
     Simple ANN classifier, for backprop experiments.
 
     Parameters
     ----------
     dropout : Optional[float] (default is 0.0)
               dropout probability
+    
     """
     def __init__(self, dropout: float = 0) -> None:
         super(BPSimpleClassifier, self).__init__()
@@ -33,13 +33,14 @@ class BPSimpleClassifier(nn.Module):
 
 
 class PCSimpleClassifier(nn.Module):
-    """
+    r"""
     Simple ANN regressor, for predictive coding experiments. 
 
     Parameters
     ----------
     dropout : Optional[float] (default is 0)
               dropout probability
+    
     """
     def __init__(self, dropout: float = 0.0) -> None:
         super(PCSimpleClassifier, self).__init__()
@@ -62,7 +63,7 @@ class PCSimpleClassifier(nn.Module):
 
 
     def forward(self, input, init=None) -> torch.Tensor:
-        """
+        r"""
         Computes a forward pass through the network. 
         
         If the model is in training mode, the forward pass is a predictive coding forward pass. Note this only does local computations.
@@ -99,7 +100,7 @@ class PCSimpleClassifier(nn.Module):
 
 
     def get_energy(self):
-        """
+        r"""
         Returns the total energy of the network.
 
         """
@@ -110,7 +111,7 @@ class PCSimpleClassifier(nn.Module):
         
     
     def fix_output(self, output):
-        """
+        r"""
         Sets the activation of the last pc_layer to the output.
         
         """
@@ -120,6 +121,10 @@ class PCSimpleClassifier(nn.Module):
         
 
     def reset_dropout_masks(self):
+        r"""
+        Resets the mask that was created to perform dropout on the signals.
+        
+        """
         for layer in self.dropout_layers:
             layer.reset_mask()
     

@@ -21,6 +21,7 @@ class PCDropout(torch.nn.Module):
     def reset_mask(self) -> None:
         r"""
         Resets the current mask used to decide which signal is affected by Dropout
+        
         """
         self.mask = None
 

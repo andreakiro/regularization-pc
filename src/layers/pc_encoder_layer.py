@@ -33,6 +33,7 @@ class PCTransformerEncoderLayer(TransformerEncoderLayer):
             'cpu' or 'gpu' possible. Defaults to None.
     dtype _type_ : (optional): 
             Data type used for the input and output Tensor. Defaults to None.
+
     """
     __constants__ = ['batch_first', 'norm_first']
 
@@ -63,7 +64,8 @@ class PCTransformerEncoderLayer(TransformerEncoderLayer):
 
     def forward(self, src: Tensor, src_mask: Optional[Tensor] = None,
                 src_key_padding_mask: Optional[Tensor] = None) -> Tensor:
-        r"""Pass the input through the encoder layer.
+        r"""
+        Pass the input through the encoder layer.
         
         Parameters:
         ----------
@@ -77,6 +79,7 @@ class PCTransformerEncoderLayer(TransformerEncoderLayer):
         Returns
         -------
         Returns the output of the encoder layer given the input sequence and masks.
+        
         """
 
         x = src
@@ -95,7 +98,10 @@ class PCTransformerEncoderLayer(TransformerEncoderLayer):
         attn_mask: Optional[Tensor], 
         key_padding_mask: Optional[Tensor]
     ) -> Tensor:
-        """PC Self-Attention Block"""
+        """
+        PC Self-Attention Block
+        
+        """
         x = self.pc_self_attn(
             x, x, x,
             attn_mask=attn_mask,
@@ -107,7 +113,10 @@ class PCTransformerEncoderLayer(TransformerEncoderLayer):
 
 
     def _pc_ff_block(self, x: Tensor) -> Tensor:
-        """PC Feed-Forward Block"""
+        """
+        PC Feed-Forward Block
+        
+        """
         x = self.dropout(self.activation(self.linear1(x)))
         x = self.pc_ff_layer1(x)
         x = self.dropout2(self.linear2(x))
