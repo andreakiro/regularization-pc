@@ -6,7 +6,7 @@
 
 ## Get started with our code
 
-We implement two simple models once with BP and once with PC (click for details)
+We implement two simple models once with BP and once with PC (click for details and all run parameters)
 - Basic [regression model](doc/regression.md) to be trained on a noisy sinus time series
 - Basic [classification model](doc/classification.md) to be trained on the classic MNIST dataset
 
@@ -32,6 +32,7 @@ python3 -m pip install -r ./env/requirements.txt
 ```
 
 ## Reproducing our results
+All our experiments were performed on CPU.
 For reproducing the experiments discussed in our report, use the [Weights and Biases](doc/sweep.md) 
 instruction file. Create an account and project on wandb.ai and create sweeps via the 
 sweep ".yaml" files found in the "wnb" directory. The ".yaml" files are sorted by experiment type.
