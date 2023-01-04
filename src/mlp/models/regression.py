@@ -22,6 +22,7 @@ class BPSimpleRegressor(nn.Module):
 
     def __init__(self, dropout: float = 0.0, input_dim: int = 1) -> None:
         super(BPSimpleRegressor, self).__init__()
+        # 1,050,624 free weight parameters
         self.linear_1 = nn.Linear(input_dim, 1024)
         self.linear_2 = nn.Linear(1024, 1024)
         self.linear_3 = nn.Linear(1024, 1)
@@ -65,8 +66,8 @@ class PCSimpleRegressor(nn.Module):
     """
 
     def __init__(self, dropout: float = 0.0, input_dim: int = 1) -> None:
-
         super(PCSimpleRegressor, self).__init__()
+        # 1,050,624 free weight parameters
         self.linear_1 = nn.Linear(input_dim, 1024)
         self.linear_2 = nn.Linear(1024, 1024)
         self.linear_3 = nn.Linear(1024, 1)

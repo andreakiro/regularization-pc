@@ -9,7 +9,7 @@ INF = 1e+30  # infinity value, to reverse softmax
 class BPSimpleClassifier(nn.Module):
     r"""
     Simple ANN classifier, for backprop experiments.
-
+    
     Parameters
     ----------
     dropout : Optional[float] (default is 0.0)
@@ -19,17 +19,41 @@ class BPSimpleClassifier(nn.Module):
 
     def __init__(self, dropout: float = 0) -> None:
         super(BPSimpleClassifier, self).__init__()
-        self.linear_1 = nn.Linear(28*28, 50)
-        self.linear_2 = nn.Linear(50, 50)
-        self.linear_3 = nn.Linear(50, 10)
+        # 922,240 free weight parameters
+        self.linear_1 = nn.Linear(28*28, 512)
+        self.linear_2 = nn.Linear(512, 512)
+        self.linear_3 = nn.Linear(512, 256)
+        self.linear_4 = nn.Linear(256, 256)
+        self.linear_5 = nn.Linear(256, 128)
+        self.linear_6 = nn.Linear(128, 128)
+        self.linear_7 = nn.Linear(128, 64)
+        self.linear_8 = nn.Linear(64, 64)
+        self.linear_9 = nn.Linear(64, 10)
+
         self.dropout = nn.Dropout(p=dropout)
-        self.linear_layers = [self.linear_1, self.linear_2, self.linear_3]
+        self.linear_layers = [
+            self.linear_1, 
+            self.linear_2, 
+            self.linear_3,
+            self.linear_4,
+            self.linear_5,
+            self.linear_6,
+            self.linear_7,
+            self.linear_8,
+            self.linear_9
+        ]
 
     def forward(self, x) -> torch.Tensor:
         x = x.reshape(-1, 28*28)
         x = F.relu(self.dropout(self.linear_1(x)))
         x = F.relu(self.dropout(self.linear_2(x)))
-        o = F.log_softmax(self.linear_3(x), dim=1)
+        x = F.relu(self.dropout(self.linear_3(x)))
+        x = F.relu(self.dropout(self.linear_4(x)))
+        x = F.relu(self.dropout(self.linear_5(x)))
+        x = F.relu(self.dropout(self.linear_6(x)))
+        x = F.relu(self.dropout(self.linear_7(x)))
+        x = F.relu(self.dropout(self.linear_8(x)))
+        o = F.log_softmax(self.linear_9(x), dim=1)
         return o
 
 
@@ -46,23 +70,73 @@ class PCSimpleClassifier(nn.Module):
 
     def __init__(self, dropout: float = 0.0) -> None:
         super(PCSimpleClassifier, self).__init__()
-        self.linear_1 = nn.Linear(28*28, 50)
-        self.linear_2 = nn.Linear(50, 50)
-        self.linear_3 = nn.Linear(50, 10)
+        # 922,240 free weight parameters
+        self.linear_1 = nn.Linear(28*28, 512)
+        self.linear_2 = nn.Linear(512, 512)
+        self.linear_3 = nn.Linear(512, 256)
+        self.linear_4 = nn.Linear(256, 256)
+        self.linear_5 = nn.Linear(256, 128)
+        self.linear_6 = nn.Linear(128, 128)
+        self.linear_7 = nn.Linear(128, 64)
+        self.linear_8 = nn.Linear(64, 64)
+        self.linear_9 = nn.Linear(64, 10)
 
-        self.pc_layer1 = PCLayer(size=50)
-        self.pc_layer2 = PCLayer(size=50)
-        self.pc_layer3 = PCLayer(size=10)
+        self.pc_layer1 = PCLayer(size=512)
+        self.pc_layer2 = PCLayer(size=512)
+        self.pc_layer3 = PCLayer(size=256)
+        self.pc_layer4 = PCLayer(size=256)
+        self.pc_layer5 = PCLayer(size=128)
+        self.pc_layer6 = PCLayer(size=128)
+        self.pc_layer7 = PCLayer(size=64)
+        self.pc_layer8 = PCLayer(size=64)
+        self.pc_layer9 = PCLayer(size=10)
 
         self.pc_softmax = PCSoftmaxLayer(size=10)
 
         self.pc_dropout1 = PCDropout(p=dropout)
         self.pc_dropout2 = PCDropout(p=dropout)
-        self.dropout_layers = [self.pc_dropout1, self.pc_dropout2]
+        self.pc_dropout3 = PCDropout(p=dropout)
+        self.pc_dropout4 = PCDropout(p=dropout)
+        self.pc_dropout5 = PCDropout(p=dropout)
+        self.pc_dropout6 = PCDropout(p=dropout)
+        self.pc_dropout7 = PCDropout(p=dropout)
+        self.pc_dropout8 = PCDropout(p=dropout)
 
-        self.linear_layers = [self.linear_1, self.linear_2, self.linear_3]
-        self.pc_layers = [self.pc_layer1, self.pc_layer2,
-                          self.pc_layer3, self.pc_softmax]
+        self.dropout_layers = [
+            self.pc_dropout1,
+            self.pc_dropout2,
+            self.pc_dropout3,
+            self.pc_dropout4,
+            self.pc_dropout5,
+            self.pc_dropout6,
+            self.pc_dropout7,
+            self.pc_dropout8
+        ]
+
+        self.linear_layers = [
+            self.linear_1,
+            self.linear_2,
+            self.linear_3,
+            self.linear_4,
+            self.linear_5,
+            self.linear_6,
+            self.linear_7,
+            self.linear_8,
+            self.linear_9,
+        ]
+
+        self.pc_layers = [
+            self.pc_layer1,
+            self.pc_layer2,
+            self.pc_layer3, 
+            self.pc_layer4,
+            self.pc_layer5,
+            self.pc_layer6,
+            self.pc_layer7,
+            self.pc_layer8,
+            self.pc_layer9,
+            self.pc_softmax
+        ]
 
     def forward(self, input, init=None) -> torch.Tensor:
         r"""
@@ -96,9 +170,21 @@ class PCSimpleClassifier(nn.Module):
         x_1 = self.pc_layer1(μ_1, init) if self.training else μ_1
         μ_2 = torch.relu(self.pc_dropout2(self.linear_2(x_1), self.training))
         x_2 = self.pc_layer2(μ_2, init) if self.training else μ_2
-        μ_3 = self.linear_3(x_2)
+        μ_3 = torch.relu(self.pc_dropout3(self.linear_3(x_2), self.training))
         x_3 = self.pc_layer3(μ_3, init) if self.training else μ_3
-        return self.pc_softmax(x_3, init) if self.training else F.log_softmax(x_3, dim=1)
+        μ_4 = torch.relu(self.pc_dropout4(self.linear_4(x_3), self.training))
+        x_4 = self.pc_layer4(μ_4, init) if self.training else μ_4
+        μ_5 = torch.relu(self.pc_dropout5(self.linear_5(x_4), self.training))
+        x_5 = self.pc_layer5(μ_5, init) if self.training else μ_5
+        μ_6 = torch.relu(self.pc_dropout6(self.linear_6(x_5), self.training))
+        x_6 = self.pc_layer6(μ_6, init) if self.training else μ_6
+        μ_7 = torch.relu(self.pc_dropout7(self.linear_7(x_6), self.training))
+        x_7 = self.pc_layer7(μ_7, init) if self.training else μ_7
+        μ_8 = torch.relu(self.pc_dropout8(self.linear_8(x_7), self.training))
+        x_8 = self.pc_layer8(μ_8, init) if self.training else μ_8
+        μ_9 = self.linear_9(x_8)
+        x_9 = self.pc_layer9(μ_9, init) if self.training else μ_9
+        return self.pc_softmax(x_9, init) if self.training else F.log_softmax(x_9, dim=1)
 
     def get_energy(self):
         r"""
