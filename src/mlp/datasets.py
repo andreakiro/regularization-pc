@@ -19,7 +19,7 @@ class SinusDataset(torch.utils.data.Dataset):
                 Path to the data directory.
         device : torch.device
                 Whether to load the data on cpu or gpu.
-        
+
     """
     @classmethod
     def generate(
@@ -54,10 +54,12 @@ class SinusDataset(torch.utils.data.Dataset):
             data_dir: Path to directory, where the samples are stored in.
         """
 
-        if os.path.exists(data_dir) and not force_download: return data_dir
+        if os.path.exists(data_dir) and not force_download:
+            return data_dir
 
-        x = np.linspace(lower_bound, upper_bound, num_samples, dtype=np.float32)
-        gt = np.sin(1.0 + x*x) # sine of some function of inputs x
+        x = np.linspace(lower_bound, upper_bound,
+                        num_samples, dtype=np.float32)
+        gt = np.sin(1.0 + x*x)  # sine of some function of inputs x
         y = gt + (noise_std * np.random.randn(num_samples) + noise_mean)
 
         Path(data_dir).mkdir(parents=True, exist_ok=True)
@@ -67,13 +69,13 @@ class SinusDataset(torch.utils.data.Dataset):
         print(f'Created sine dataset at {data_dir}')
 
         return data_dir
-    
+
     def __init__(
         self,
         data_dir: str,
         device: torch.device
     ):
-        
+
         X = np.load(os.path.join(data_dir, 'sine_regression_x.npy'))
         y = np.load(os.path.join(data_dir, 'sine_regression_y.npy'))
         gt = np.load(os.path.join(data_dir, 'sine_regression_gt.npy'))
@@ -81,19 +83,19 @@ class SinusDataset(torch.utils.data.Dataset):
         self.X = torch.tensor(X, dtype=torch.float32).unsqueeze(1).to(device)
         self.y = torch.tensor(y, dtype=torch.float32).unsqueeze(1).to(device)
         self.gt = (X, gt)
-        
-        self.sample_size = 1
 
+        self.sample_size = 1
 
     def __len__(self):
         return len(self.X)
 
-
     def __getitem__(self, idx):
-        if torch.is_tensor(idx): idx = idx.tolist()
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
         x = self.X[idx]
         y = self.y[idx]
         return x, y
+
 
 class OODSinusDataset(torch.utils.data.Dataset):
     r"""
@@ -104,7 +106,7 @@ class OODSinusDataset(torch.utils.data.Dataset):
     ----------
         data : (torch.tensor, torch.tensor)
                 The (X, y) value pairs previously generated.
-        
+
     """
     @classmethod
     def generate(
@@ -130,11 +132,11 @@ class OODSinusDataset(torch.utils.data.Dataset):
         -------
             (torch.Tensor, torch.Tensor): Generated Sample pairs.
         """
-        #TODO: torch gives warning: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
-        x = torch.tensor(np.linspace(lower_bound, upper_bound, num_samples), dtype=torch.float32).unsqueeze(1).to(device)
+        # TODO: torch gives warning: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+        x = torch.tensor(np.linspace(lower_bound, upper_bound,
+                         num_samples), dtype=torch.float32).unsqueeze(1).to(device)
         gt = torch.tensor(np.sin(1.0 + x*x), dtype=torch.float32).to(device)
         return (x, gt)
-
 
     def __init__(
         self,
@@ -143,17 +145,15 @@ class OODSinusDataset(torch.utils.data.Dataset):
         self.X, self.gt = data
         self.sample_size = 1
 
-
     def __len__(self):
         return len(self.X)
 
-
     def __getitem__(self, idx):
-        if torch.is_tensor(idx): idx = idx.tolist()
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
         x = self.X[idx]
         gt = self.gt[idx]
         return x, gt
-
 
 
 class HousePriceDataset(torch.utils.data.Dataset):
@@ -173,7 +173,7 @@ class HousePriceDataset(torch.utils.data.Dataset):
     DOWNLOAD_URL = 'https://polybox.ethz.ch/index.php/s/CyKkmOuKgsX9b4k/download'
 
     @classmethod
-    def generate(cls, data_dir: str, force_download: bool =False):
+    def generate(cls, data_dir: str, force_download: bool = False):
         r"""
         Downloades and Preprocesses the data. The preprocessing contains a
         transformation of the metrics to a numerical value and the normalization 
@@ -190,13 +190,14 @@ class HousePriceDataset(torch.utils.data.Dataset):
         Returns:
         -------
             str: The data directory, where the data is stored in.
-        
+
         """
-        if os.path.exists(data_dir) and not force_download: return data_dir
+        if os.path.exists(data_dir) and not force_download:
+            return data_dir
 
         Path(data_dir).mkdir(parents=True, exist_ok=True)
         target_file = os.path.join(data_dir, 'house_prices_raw.csv')
-        
+
         with requests.Session() as s:
             response = s.get(cls.DOWNLOAD_URL)
             decoded_content = response.content.decode('utf-8')
@@ -210,26 +211,29 @@ class HousePriceDataset(torch.utils.data.Dataset):
         unique_values_dict = {}
         for column in df.columns:
             # save unique values of every column in the dictionary
-            if column == 'Id' or column == 'SalePrice': continue
+            if column == 'Id' or column == 'SalePrice':
+                continue
             unique_values = df[column].unique()
             unique_values_dict[column] = unique_values
-        
-        
+
         def encode_house_price_dataset(row):
             encoded_x = []
             for col in df.columns:
                 # ignore id and SalePrice (y)
-                if col == "Id" or col == "SalePrice": continue 
+                if col == "Id" or col == "SalePrice":
+                    continue
                 unique_values = unique_values_dict[col]
                 value = row[col]
-                encoded_x.append(np.where(unique_values == value)[0][0]/len(unique_values))
+                encoded_x.append(np.where(unique_values == value)[
+                                 0][0]/len(unique_values))
             return np.array(encoded_x, dtype=np.float32)
 
-        
-        df['encoded_x'] = df.apply(lambda row: encode_house_price_dataset(row), axis=1)
+        df['encoded_x'] = df.apply(
+            lambda row: encode_house_price_dataset(row), axis=1)
 
         x_features = np.stack(df['encoded_x'].to_numpy())
-        y_labels = df['SalePrice'].to_numpy().astype(np.float32) # y label is the house price
+        y_labels = df['SalePrice'].to_numpy().astype(
+            np.float32)  # y label is the house price
         mean_house_prices = np.mean(y_labels)
         std_house_prices = np.std(y_labels)
         y_labels = (y_labels-mean_house_prices)/std_house_prices
@@ -239,7 +243,6 @@ class HousePriceDataset(torch.utils.data.Dataset):
         print(f'Created housing dataset at {data_dir}')
 
         return data_dir
-
 
     def __init__(
         self,
@@ -251,41 +254,41 @@ class HousePriceDataset(torch.utils.data.Dataset):
 
         X = np.load(data_x_path)
         y = np.load(data_y_path)
-        
+
         self.X = torch.tensor(X, dtype=torch.float32).to(device)
         self.y = torch.tensor(y, dtype=torch.float32).unsqueeze(1).to(device)
-        
+
         self.sample_size = self.X.shape[1]
-        
 
     def __len__(self):
         return len(self.X)
 
-
     def __getitem__(self, idx):
-        if torch.is_tensor(idx): idx = idx.tolist()
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
         x = self.X[idx]
         y = self.y[idx]
         return x, y
 
+
 class OODImageDataset(torch.utils.data.Dataset):
     r"""
     Out Of Distribution Image Dataset for containing augmented MNIST or FashionMNIST data
-    
+
     Parameters:
     ----------
         data_dir : str
                 Path to the data directory.
         device : torch.device
                 Whether to load the data on cpu or gpu.
-    
+
     """
     @classmethod
     def generate(cls, dataloader):
         r"""
         Downscaling, flipping, transformation, swirling, change in brightness and contrast of given 
         MNIST / FashionMNIST dataloader
-        
+
         Parameters:
         ----------
             num_samples : int
@@ -299,12 +302,14 @@ class OODImageDataset(torch.utils.data.Dataset):
         -------
             (np.ndarray, np.ndarray): Augmented Images and groundtruth pairs.
         """
-        augmented_imgs = np.zeros((len(dataloader), 1, 28, 28)).astype(np.float32)
+        augmented_imgs = np.zeros(
+            (len(dataloader), 1, 28, 28)).astype(np.float32)
         groundtruth = np.zeros((len(dataloader)))
         for idx, (img, gt) in enumerate(tqdm(dataloader)):
-            augmented_imgs[idx] = augment_single_img(np.squeeze(img.numpy(), axis=0))
+            augmented_imgs[idx] = augment_single_img(
+                np.squeeze(img.numpy(), axis=0))
             groundtruth[idx] = gt
-        
+
         return augmented_imgs, groundtruth
 
     def __init__(
@@ -317,18 +322,17 @@ class OODImageDataset(torch.utils.data.Dataset):
 
         X = np.load(data_x_path)
         y = np.load(data_y_path)
-        
+
         self.X = torch.tensor(X, dtype=torch.float32)
         self.y = torch.tensor(y, dtype=torch.long).unsqueeze(1)
         self.device = device
-        
-    
+
     def __len__(self):
         return len(self.X)
 
-
     def __getitem__(self, idx):
-        if torch.is_tensor(idx): idx = idx.tolist()
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
         x = self.X[idx].to(self.device)
         y = self.y[idx].to(self.device)
         return x, y

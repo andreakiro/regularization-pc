@@ -16,7 +16,7 @@ def create_wandb_config(args: edict):
     """
     # identifies an experiment
     wandb_config = dict()
-    
+
     if args.wandb == 'offline':
         os.environ['WANDB_SILENT'] = 'true'
 
@@ -63,4 +63,3 @@ def create_wandb_config(args: edict):
         })
 
     return wandb_config
-    
