@@ -25,6 +25,7 @@ class BPSimpleRegressor(nn.Module):
         self.linear_2 = nn.Linear(1024, 1024)
         self.linear_3 = nn.Linear(1024, 1)
         self.dropout = nn.Dropout(p=dropout)
+        self.linear_layers = [self.linear_1, self.linear_2, self.linear_3]
     
 
     def forward(self, x) ->  torch.Tensor:
