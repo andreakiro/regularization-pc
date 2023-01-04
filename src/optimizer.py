@@ -1,7 +1,23 @@
 import torch
 
 def set_optimizer(paramslist, optimizer, lr, wd, mom):
-
+  r"""
+  Selects the optimizer with its corresponding hyperparameters. 
+  
+  Parameters:
+  ----------
+      paramslist : torch.nn.ParameterList
+              Model parameters (weights) that the optimizer will be updating.
+      optmizer : str
+              The type of the optimizer. Currently available: [adam, adagrad, rmsprop, momentum]
+      lr : float
+              The learning rate.
+      wd : float
+              Weight decay.
+      mom : float
+              momentum
+  
+  """
   optimizers = {
     'adam': torch.optim.Adam(
       params=paramslist,

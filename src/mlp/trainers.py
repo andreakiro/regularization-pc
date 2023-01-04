@@ -12,16 +12,36 @@ from src.optimizer import set_optimizer
 
 
 class Trainer(ABC):
-
+    r"""
+    Abstract parent trainer class, used to contain the generalization
+    method needed in all child classes.
+    
+    """
     @staticmethod
     def evaluate_generalization(
-        dataset: str,
         model: nn.Module,
         loss: torch.nn.modules.loss,
         gen_loader: torch.utils.data.DataLoader,
         device: torch.device = torch.device('cpu', 0)
     ) -> float:
-        
+        r"""
+        Function for testing the performance of the model on OOD-data.
+
+        Parameters:
+        ----------
+            model : nn.Module
+                    torch Model on which to test the ood-data on.
+            loss : torch.nn.modules.loss
+                    error function on the models prediction and groundtruth.
+            gen_loader : torch.utils.data.DataLoader: 
+                    Dataloader containing the OOD data.
+            device : torch.device (optional)
+                    Torch device to test the model on. Defaults to torch.device('cpu', 0).
+
+        Returns:
+        -------
+            float: Averaged loss over all samples in the gen_loader.
+        """
         model.eval()
 
         with torch.no_grad():
@@ -36,9 +56,24 @@ class Trainer(ABC):
                 return float(np.average(losses).item())
 
 
-
 class BPTrainer(Trainer):
+    r"""
+    Trainer class for performing backpropagation training as well as 
+    testing and evaluation on the test and generalization datasets.
 
+    Parameters:
+    ----------
+        args : edict
+                Arguments given by the user input or standard values.
+        epochs : int
+                Number of epochs for training.
+        optimizer : torch.optim
+                The used optimizer for backpropagation.
+        loss : torch.nn.modules.loss
+                error function on the models prediction and groundtruth.
+        device : torch.device (optional)
+                Torch device to test the model on. Defaults to torch.device('cpu', 0).
+    """
     def __init__(
         self,
         args: edict,
@@ -47,7 +82,6 @@ class BPTrainer(Trainer):
         loss: torch.nn.modules.loss,
         device: torch.device = torch.device('cpu', 0)
     ):
-
         self.args = args
         self.device = device
         
@@ -66,7 +100,24 @@ class BPTrainer(Trainer):
         val_loader: torch.utils.data.DataLoader,
         gen_loader: torch.utils.data.DataLoader
     ):
+        """
+        Trains the model on the train_loader data, tests its performance on
+        the val_loader after every epoch and measures the generalization error
+        on the gen_loader data.
 
+        Args:
+            model : nn.Module
+                    The torch model to train.
+            train_loader : torch.utils.data.DataLoader
+                    The Dataloader providing the data for training.
+            val_loader : torch.utils.data.DataLoader
+                    The Dataloader providing the data for testing. 
+            gen_loader : torch.utils.data.DataLoader
+                    The dataloader providing the data for the generalization error.
+
+        Returns:
+            edict: Dictionary containing traning metrics
+        """
         self.model = model.to(self.device)
         self.train_loader = train_loader
         self.val_loader = val_loader
@@ -163,7 +214,6 @@ class BPTrainer(Trainer):
         np.save(file = os.path.join(self.args.logs_dir, "val_loss.npy"), arr = np.array(self.val_loss))
 
         generalization_error = self.evaluate_generalization(
-            dataset=self.args.dataset,
             model=self.model,
             loss=self.loss,
             gen_loader=self.gen_loader, 
@@ -189,10 +239,20 @@ class BPTrainer(Trainer):
 class PCTrainer(Trainer):
     """
     Class for training a PC network.
-
+    
     Parameters
     ----------
-    init    : str
+        args : edict
+                Arguments given by the user input or standard values.
+        epochs : int
+                Number of epochs for training.
+        optimizer : torch.optim
+                The used optimizer for weight backpropagation.
+        loss : torch.nn.modules.loss
+                error function on the models prediction and groundtruth.
+        device : torch.device (optional)
+                Torch device to test the model on. Defaults to torch.device('cpu', 0).
+        init : str
               initialization technique PC hidden values; supported techniques:
                 - 'zeros', hidden values initialized with 0s
                 - 'normal', hidden values initialized with a normal distribution with μ=mean and σ=std
@@ -200,6 +260,10 @@ class PCTrainer(Trainer):
                   *Understanding the difficulty of training deep feedforward neural networks* - Glorot, X. & Bengio, Y. 
                   (2010), using a normal distribution. 
                 - 'forward', hidden values initialized with the forward pass value
+        clr : float
+                PC learning rate
+        iterations : int
+                PC number of iterations for the inner loop of the algorithm
 
     """
     def __init__(
@@ -239,30 +303,28 @@ class PCTrainer(Trainer):
         method: str = "torch"
     ) -> edict:
         """
-        Fit the model.
+        Trains the model on the train_loader data, tests its performance on
+        the val_loader after every epoch and measures the generalization error
+        on the gen_loader data.        
 
         Parameters
         ----------
-        model : nn.Module
-                model to optimize
-
-        train_dataloader : torch.utils.data.DataLoader
-                           dataloader for training data
-        
-        val_dataloader : torch.utils.data.DataLoader
-                         dataloader for validation data
-                         
-        gen_dataloader : torch.utils.data.DataLoader
-                         dataloader for testing generalization of out-of-distribution data                 
-        
-        method : str 
-                 method used to optimize the model; possible parameters are "torch", if the optimization is carried out 
-                 using standard torch optimizers, or "custom", if the optimization has to be perfomed used the custom
-                 backward() and step() methods implemented for the PC models; default is "torch"
+            model : nn.Module
+                    The torch model to train.
+            train_loader : torch.utils.data.DataLoader
+                    The Dataloader providing the data for training.
+            val_loader : torch.utils.data.DataLoader
+                    The Dataloader providing the data for testing. 
+            gen_loader : torch.utils.data.DataLoader
+                    The dataloader providing the data for the generalization error.              
+            method : str 
+                    method used to optimize the model; possible parameters are "torch", if the optimization is carried out 
+                    using standard torch optimizers, or "custom", if the optimization has to be perfomed used the custom
+                    backward() and step() methods implemented for the PC models; default is "torch"
 
         Returns
         -------
-        Returns a dictionary containing the statistics on training and evaluation of the model.
+            Returns a dictionary containing the statistics on training and evaluation of the model.
 
         """
         self.model = model.to(self.device)
@@ -437,7 +499,6 @@ class PCTrainer(Trainer):
         np.save(file = os.path.join(self.args.logs_dir, "val_energy.npy"), arr = np.array(self.val_loss))
 
         generalization_error = self.evaluate_generalization(
-            dataset=self.args.dataset,
             model=self.model,
             loss=self.loss,
             gen_loader=self.gen_loader, 
@@ -460,16 +521,38 @@ class PCTrainer(Trainer):
 
 
 class EarlyStopper:
-
+    r"""
+    Early Stopper class to calculate the change in test_loss over past epochs.
+    
+    Parameters:
+    ----------
+        patience : int (optional)
+            The number of epochs the model has time to improve. Defaults to 10.
+        min_delta : int (optional)
+            The factor the test loss has to improve. Defaults to 0.
+    
+    """
     # credits: https://stackoverflow.com/questions/71998978/early-stopping-in-pytorch
 
-    def __init__(self, patience=1, min_delta=0):
+    def __init__(self, patience=10, min_delta=0):
         self.patience = patience
         self.min_delta = min_delta
         self.counter = 0
         self.min_validation_loss = np.inf
 
     def verify(self, validation_loss):
+        r"""
+        Calculates early stopping, whether the model has improved enough.
+
+        Parameters:
+        ----------
+            validation_loss : float
+                    The validation loss of the model in the current epoch. 
+
+        Returns:
+        -------
+            boolean: True if early stopping is induced.
+        """
         if validation_loss < self.min_validation_loss:
             self.min_validation_loss = validation_loss
             self.counter = 0

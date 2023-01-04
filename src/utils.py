@@ -2,7 +2,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import random
-
 from skimage.util import random_noise
 from skimage.transform import warp, rescale as rsc, resize, swirl, PiecewiseAffineTransform
 from torchvision import datasets
@@ -11,6 +10,22 @@ from torchvision import datasets
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 def augment_single_img(image):
+    r"""
+    Randomly augments the given image with
+        - affine transformation, adding sinusoidal oscillation to row columns,
+        - gaussian additive noise, 
+        - downscaling by a factor of 0.8, and/or
+        - swirling the center pixels in a radius of 5
+
+    Parameters
+    ----------
+        image : np.ndarray 
+                image to be augmented, is of shape (1, 28, 28).
+
+    Returns
+    -------
+        np.ndarray: The augmented image of the same shape as the input.
+    """
     bw, x, y = (1, 28, 28)
     def aff_trans(image):
         # code adapted from a previous project of Anne: https://github.com/An-nay-marks/3DVision_2022
@@ -28,9 +43,8 @@ def augment_single_img(image):
         aff = PiecewiseAffineTransform()
         aff.estimate(src, dst)
         return warp(image, aff)
+    
     image = np.reshape(image,(x, y, bw))
-    # io.imshow(image)
-    # plt.show()
     noise = lambda x:random_noise(x)
     swirls = lambda x: swirl(x, strength = 1, radius = 5, rotation=0.05) # not too much of a swirl
     affine_trans = lambda x: aff_trans(x)
@@ -41,12 +55,17 @@ def augment_single_img(image):
         if random.choice(sampleList):
             image = func(image)
     image = resize(image, (x, y, bw))
-    # io.imshow(image)
-    # plt.show()
     image = np.reshape(image, (bw, x, y))
     return image
     
 def create_data_folder():
+    r"""
+    Creates the data directory structure.
+
+    Returns
+    -------
+        str: path to the data folder
+    """
     folder_path = os.path.join(ROOT_DIR, "data")
     os.makedirs(folder_path, exist_ok=True)
     os.makedirs(os.path.join(folder_path, 'regression'), exist_ok=True)
@@ -54,11 +73,45 @@ def create_data_folder():
     return folder_path
 
 def create_model_save_folder(model_type, run_name):
+    r"""
+    Creates the folder where the model and other logs are saved to.
+
+    Parameters
+    ----------
+        model_type : str 
+                choose between
+                "reg" for regression model and 
+                "clf" for classification model.
+        run_name : str
+                The name of the current experiment run.
+
+    Returns
+    -------
+        str: path to the model saving folder
+    """
     folder_path = os.path.join(ROOT_DIR, "out", "models", model_type, run_name)
     os.makedirs(folder_path, exist_ok=True)
     return folder_path
 
 def plot(x, observations, ground_truth=None, outfile=None):
+    """
+    Plots the sinus groundtruth curve as well as the prediction in
+    the same figure.
+
+    Parameters
+    ----------
+        x : np.ndarray
+                samples for the x - axis.
+        observations : np.ndarray
+                predictions of the model corresponding to X
+                (same size as x). 
+        ground_truth  : np.ndarray
+                groundtruth data for the y-axis corresponding to X
+                (same size as x). Defaults to None.
+        outfile : str (optional)
+                Path to the output file, where the plot is saved to. 
+                Defaults to None.
+    """
     os.environ['KMP_DUPLICATE_LIB_OK']='True'
     plt.scatter(x, observations, color="r", label="noisy observation", marker='.')
     if ground_truth is not None: 
@@ -71,6 +124,15 @@ def plot(x, observations, ground_truth=None, outfile=None):
     plt.show()
 
 def plot_ood_classification(dataset: str):
+    r"""
+    Plots ten samples of the mnist or fashion dataset and plots random augmentation as done
+    for the generalization dataset below each sample.
+    
+    Parameters
+    ----------
+        dataset : str
+                Choose between "mnist" and "fashion".
+    """
     if dataset == "mnist":
         data = datasets.MNIST(os.path.join(ROOT_DIR, "data/classification/MNIST"), train=True, download=True).data.numpy()
     elif dataset == "fashion":

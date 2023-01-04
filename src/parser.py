@@ -3,6 +3,12 @@ import argparse
 
 
 def read_arguments():
+    r"""
+    Argparser used to parse user inputs and set default parameters necessary for the training.
+
+    Returns:
+        edict : Dictionary containing all parsed arguments/parameters
+    """
     parser = argparse.ArgumentParser()
     
     # minimal required arguments:

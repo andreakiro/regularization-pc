@@ -1,8 +1,19 @@
 from easydict import EasyDict as edict
-import os, wandb
+import os
 
 
 def create_wandb_config(args: edict):
+    r"""
+    Creates Config File from the user input parameters, and uploads it to the 
+    corresponding wandb experiment
+
+    Args:
+        args : edict
+                Dictionary containing the user inputs or default values.
+
+    Returns:
+        dict: Dictionary with config
+    """
     # identifies an experiment
     wandb_config = dict()
     

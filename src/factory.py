@@ -1,12 +1,10 @@
+import numpy as np
+import torch
+import os
 from torch.utils.data import random_split, DataLoader
 from torchvision import datasets, transforms
 from easydict import EasyDict as edict
 from abc import ABC
-import numpy as np
-import torch
-import os
-
-
 from src.mlp.trainers import BPTrainer, PCTrainer
 from src.mlp.datasets import SinusDataset, OODSinusDataset, HousePriceDataset, OODImageDataset
 from src.mlp.models.regression import BPSimpleRegressor, PCSimpleRegressor
@@ -14,9 +12,21 @@ from src.mlp.models.classification import BPSimpleClassifier, PCSimpleClassifier
 from src.optimizer import set_optimizer
 
 
-
 class TrainerFactory:
+    r"""
+    Trainer Factory class called in the train.py to contain model-and task specific objects.
     
+    Parameters:
+    ----------
+        args : edict
+                all parameters taken either from user input or default values, that are
+                necessary for the training.
+        data_dir : str
+                Path to the data directory.
+        device : torch.device
+                Whether to load the model and data on cpu or gpu.
+    
+    """
     def __init__(
         self,
         args : edict,
@@ -41,7 +51,20 @@ class TrainerFactory:
 
 
 class Factory(ABC):
-
+    r"""
+    Factory parent class for functions used in both Classification and Regression Factories.
+    
+    Parameters:
+    ----------
+        args : edict
+                all parameters taken either from user input or default values, that are
+                necessary for the training.
+        data_dir : str
+                Path to the data directory.
+        device : torch.device
+                Whether to load the model and data on cpu or gpu.
+    
+    """
     def __init__(
         self,
         args : edict,
@@ -56,7 +79,12 @@ class Factory(ABC):
         
 
     def _set_trainer(self):
+        r"""Sets the BP and PC Trainer and the Optimizer according to the args.
 
+        Returns:
+            Factory: self
+        
+        """
         self.optimizer = set_optimizer(
             paramslist=torch.nn.ParameterList(self.model.parameters()),
             optimizer=self.args.optimizer,
@@ -90,7 +118,20 @@ class Factory(ABC):
 
 
 class RegressionFactory(Factory):
-
+    r"""
+    Factory class for Regression task. Generates the different datasets, losses, models, trainers and optimizers 
+    
+    Parameters:
+    ----------
+        args : edict
+                all parameters taken either from user input or default values, that are
+                necessary for the training.
+        data_dir : str
+                Path to the data directory.
+        device : torch.device
+                Whether to load the model and data on cpu or gpu.
+    
+    """
     def __init__(
         self,
         args : edict,
@@ -140,7 +181,20 @@ class RegressionFactory(Factory):
 
 
 class ClassificationFactory(Factory):
-
+    r"""
+    Factory class for Classification task. Generates the different datasets, losses, models, trainers and optimizers 
+    
+    Parameters:
+    ----------
+        args : edict
+                all parameters taken either from user input or default values, that are
+                necessary for the training.
+        data_dir : str
+                Path to the data directory.
+        device : torch.device
+                Whether to load the model and data on cpu or gpu.
+    
+    """
     def __init__(
         self,
         args : edict,

@@ -2,7 +2,6 @@ import os, json, torch, random
 from datetime import datetime
 import numpy as np
 import wandb
-
 from src.factory import TrainerFactory
 from src.wnb_setup import create_wandb_config
 from src.parser import read_arguments
@@ -16,7 +15,14 @@ OUT_DIR  = os.path.join(ROOT_DIR, 'out')
 
 
 def main():
-
+    r"""
+    Main Function that executes the experiments:
+     - Data Preprocessing
+     - Training
+     - Testing
+     - Test Generalization on Out-Of-Distribution Data
+     - Log files / metrics to wandb
+    """
     # fetch run args
     args = read_arguments()
     wandb_config = create_wandb_config(args)
@@ -87,9 +93,10 @@ def main():
         print(f'{"Generalization error": <21}: {round(stats["generalization"], 5)}')
 
     # =========== end training ===========
-    # TODO
-    X, y, gts = [], [], []
     if args.model == 'reg' and args.dataset == 'sine' and args.plot:
+        # For the sine dataset, the model's prediction can be plotted, as the data
+        # is scalar. 
+        X, y, gts = [], [], []
         for batch, gt in gen_loader:
             X.append(batch.detach().numpy())
             y.append(model(batch).detach().numpy())
