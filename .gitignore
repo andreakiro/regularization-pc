@@ -27,6 +27,7 @@ out
 
 # WandB files
 wandb
+*/runs-archs
 
 # venv files
 .venv
