@@ -55,6 +55,8 @@ class Trainer(ABC):
 
                 return float(np.average(losses).item())
 
+            else: return 0.0 # housing dataset has no ood data
+
 
 class BPTrainer(Trainer):
     r"""
