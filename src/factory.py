@@ -5,10 +5,10 @@ from torch.utils.data import random_split, DataLoader
 from torchvision import datasets, transforms
 from easydict import EasyDict as edict
 from abc import ABC
-from src.mlp.trainers import BPTrainer, PCTrainer
-from src.mlp.datasets import SinusDataset, OODSinusDataset, HousePriceDataset, OODImageDataset
-from src.mlp.models.regression import BPSimpleRegressor, PCSimpleRegressor
-from src.mlp.models.classification import BPSimpleClassifier, PCSimpleClassifier
+from src.trainers import BPTrainer, PCTrainer
+from src.datasets import SinusDataset, OODSinusDataset, HousePriceDataset, OODImageDataset
+from src.models.regression import BPSimpleRegressor, PCSimpleRegressor
+from src.models.classification import BPSimpleClassifier, PCSimpleClassifier
 from src.optimizer import set_optimizer
 
 
