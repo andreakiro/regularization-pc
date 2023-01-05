@@ -99,3 +99,52 @@ Initialization
 init with name
 | anne | 2_init_mnist_pc_seed42.yaml | h19w2fjn | 5440608
 | anne | 2_init_sine_pc_seed42.yaml | jqdu7i9v | 5440579
+
+---
+Dropout
+| andrea | 2_dropout_mnist_bp_seed42.yaml | siihf02c | 5515793
+| andrea | 2_dropout_mnist_pc_seed42.yaml | u4ir00mo | 5515832
+
+| andrea | 2_dropout_sine_bp_seed42.yaml | bpluj3u2 | 5515703
+| andrea | 2_dropout_sine_pc_seed42.yaml | oi23urmo | 5515723
+
+---
+Initialization
+| andrea | 2_init_sine_pc_seed42.yaml | 92xh7pmj | 5515868
+| andrea | 2_init_mnist_pc_seed42.yaml | huvb094j | 5515925
+
+---
+3-together
+| andrea | 3_together_sine_pc_seed42.yaml | ny0h69tf | 5516202
+| andrea | 3_together_mnist_pc_seed42.yaml | 4ppq0ppf | 5516182
+
+---
+bugfix-Dropout
+| andrea | 2_dropout_sine_bp_seed42.yaml | lp8d7mjq | 5541999
+| andrea | 2_dropout_sine_pc_seed42.yaml | xnuu19n5 | 5542017
+
+| andrea | 2_dropout_mnist_bp_seed42.yaml | vyshel3j | 5542034
+| andrea | 2_dropout_mnist_pc_seed42.yaml | zpuw1jt2 | 5542049
+
+---
+bugfix-Initialization
+| andrea | 2_init_sine_pc_seed42.yaml | ng9iw8t0 | 5559237
+| andrea | 2_init_mnist_pc_seed42.yaml | 5zmic39y | 5559806
+
+---
+bugfix-3-together
+| andrea | 3_together_sine_pc_seed42.yaml | 8ji187u4 | 5559356
+| andrea | 3_together_mnist_pc_seed42.yaml | y38gvz5w | 5560112
+
+
+---
+LONGER-Dropout
+| andrea | 2_dropout_sine_bp_seed42.yaml | me3vrsed | 5564974
+| andrea | 2_dropout_sine_pc_seed42.yaml | o5h65l7n | 5565023
+
+| andrea | 2_dropout_mnist_bp_seed42.yaml | sjxh7jtm | 5565071
+| andrea | 2_dropout_mnist_pc_seed42.yaml | ax3knz63 | 5565110
+
+---
+LONGER-Initialization
+| andrea | 2_init_sine_pc_seed42.yaml | l5gvxhno | 5565169
