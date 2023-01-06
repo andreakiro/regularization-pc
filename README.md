@@ -19,7 +19,7 @@ The codebase includes `src.layers`, a framework we implement for simple PC block
 
 For usage of default values, the simplest command is
 ```python
-python3 train.py --training ${bp, pc} --model ${reg, clf} --dataset ${sine, housing, mnist, fashion}
+python3 train.py --training ${bp, pc} --model ${reg, clf} --dataset ${sine, mnist}
 ```
 
 ## Project requirements
@@ -32,21 +32,8 @@ python3 -m pip install -r ./env/requirements.txt
 ```
 
 ## Reproducing our results
-All our experiments were performed on CPU.
-For reproducing the experiments discussed in our report, use the [Weights and Biases](doc/sweep.md) 
-instruction file. Create an account and project on wandb.ai and create sweeps via the 
-sweep ".yaml" files found in the "wnb" directory. The ".yaml" files are sorted by experiment type.
 
-### Single Runs
-If you want to try out single experiment runs without creating a wandb account, you can use below standard commands:
-For training with default hyper-parameters, the run is logged in the `out/` folder, showing each training step updates.
-
-Regression on Sine with default hyperparameters:
-```python
-python train.py --model reg --training bp --dataset sine --verbose 1 --plot True
-```
-
-Classification on MNIST with default hyperparameters:
-```python
-python train.py --model clf --training bp --dataset mnist --verbose 1
-```
+- All our experiments were performed on CPU
+- For reproducing them you can either run `train` file with specific params;
+- Or run sepcific [wandb](https://wandb.ai/)  sweeps for dropout and initialization experiments
+- Detailled xplanations on how to run sweeps on wandb is available [here](doc/sweep.md)
